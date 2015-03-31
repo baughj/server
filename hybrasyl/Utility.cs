@@ -419,63 +419,101 @@ namespace Hybrasyl
             public static readonly ILog Logger =
     LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-            public static dynamic GetRequiredValue(IDictionary<YamlNode, YamlNode> children, string name,
+            public static dynamic GetRequiredValue(Dictionary<String, dynamic> inputDict, string name,
                 Type targetType,
                 string errorMessage = "{0} is required")
             {
-                YamlNode needle;
-                if (!children.TryGetValue(new YamlScalarNode {Value = name}, out needle))
+                dynamic needle;
+                if (!inputDict.TryGetValue(name, out needle))
                 {
                     throw new YamlException(String.Format(errorMessage, name));
                 }
                 var converter = TypeDescriptor.GetConverter(targetType);
-                var yamlScalarNode = (YamlScalarNode) needle;
                 try
                 {
-                    return converter.ConvertFromString(yamlScalarNode.Value);
+                    return converter.ConvertFromString(needle);
                 }
                 catch (Exception e)
                 {
-                    throw new YamlException(String.Format("{0} was unparseable as type {1}: {2}", name, targetType.ToString(),
-                        e.ToString()));
+                    throw new YamlException(String.Format("{0} was unparseable as type {1}: {2}", name, targetType, e));
+
                 }
             }
 
-
-            public static dynamic GetList(IDictionary<YamlNode, YamlNode> children, string name)
-            {
-                YamlNode needle;
-                if (children.TryGetValue(new YamlScalarNode { Value = name }, out needle))
-                {
-                    // needle should be a YamlSequenceNode whose children contain one or more YamlMappingNode
-                    foreach (var node in ((YamlSequenceNode)needle).Children)
-                    { 
-                        Logger.InfoFormat("node is {0}", node.GetType());
-                    }
-
-                }
-                return null;
-            }
-
-            public static dynamic GetOptionalValue(IDictionary<YamlNode, YamlNode> children, string name,
+            public static dynamic GetOptionalValue(Dictionary<String, dynamic> inputDict , string name,
                 Type targetType,
                 dynamic overrideValue = null)
             {
-                YamlNode needle;
-                if (!children.TryGetValue(new YamlScalarNode {Value = name}, out needle))
-                {
-                    return overrideValue;
-                }
                 var converter = TypeDescriptor.GetConverter(targetType);
-                var yamlScalarNode = (YamlScalarNode) needle;
-                try
+                dynamic needle;
+                if (inputDict.TryGetValue(name, out needle))
                 {
-                    return converter.ConvertFromString(yamlScalarNode.Value);
+                    try
+                    {
+                        return converter.ConvertFromString(needle);
+                    }
+                    catch (Exception)
+                    {
+                        return overrideValue;
+                    }
                 }
-                catch (Exception)
+                return overrideValue;
+            }
+
+
+            public static List<dynamic> GetList(IList<YamlNode> children)
+            {
+                var thelist = new List<dynamic>();
+
+                foreach (var node in children)
                 {
-                    return overrideValue;
+                    if (node is YamlSequenceNode)
+                    {
+                        var descendant = node as YamlSequenceNode;
+                        thelist.Add(GetList(descendant.Children));
+                    }
+                    if (node is YamlMappingNode)
+                    {
+                        var descendant = node as YamlMappingNode;
+                        thelist.Add(GetDictionary(descendant.Children));
+                    }
+                    if (node is YamlScalarNode)
+                    {
+                        thelist.Add(node.ToString());
+                    }
                 }
+                return thelist;
+            }
+
+            /// <summary>
+            /// Recursively descend a dictionary. If name is specified, find name in a passed mapping,
+            /// and only descend that.
+            /// </summary>
+            /// <param name="children"></param>
+            /// <param name="name"></param>
+            /// <returns></returns>
+            public static Dictionary<String, dynamic> GetDictionary(IDictionary<YamlNode, YamlNode> children, String name=null)
+            {
+                var theDictionary = new Dictionary<String, dynamic>();
+
+                foreach (KeyValuePair<YamlNode, YamlNode> entry in children)
+                {
+                    if (entry.Value is YamlSequenceNode)
+                    {
+                        var descendant = entry.Value as YamlSequenceNode;
+                        theDictionary.Add(entry.Key.ToString(), GetList(descendant.Children));
+                    }
+                    if (entry.Value is YamlMappingNode)
+                    {
+                        var descendant = entry.Value as YamlMappingNode;
+                        theDictionary.Add(entry.Key.ToString(), GetDictionary(descendant.Children));
+                    }
+                    if (entry.Value is YamlScalarNode)
+                    {
+                        theDictionary.Add(entry.Key.ToString(), entry.Value.ToString());
+                    }
+                }
+                return theDictionary;
             }
 
         }
