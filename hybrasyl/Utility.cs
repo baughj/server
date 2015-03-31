@@ -21,11 +21,14 @@
  */
 
 using log4net;
+using SharpYaml;
+using SharpYaml.Serialization;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Version = System.Version;
 
 namespace Hybrasyl
 {
@@ -408,9 +411,74 @@ namespace Hybrasyl
         public const int INFO = 6;
         public const int DEBUG = 7;
     }
-
     namespace Utility
     {
+
+        public static class YamlHelper
+        {
+            public static readonly ILog Logger =
+    LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
+            public static dynamic GetRequiredValue(IDictionary<YamlNode, YamlNode> children, string name,
+                Type targetType,
+                string errorMessage = "{0} is required")
+            {
+                YamlNode needle;
+                if (!children.TryGetValue(new YamlScalarNode {Value = name}, out needle))
+                {
+                    throw new YamlException(String.Format(errorMessage, name));
+                }
+                var converter = TypeDescriptor.GetConverter(targetType);
+                var yamlScalarNode = (YamlScalarNode) needle;
+                try
+                {
+                    return converter.ConvertFromString(yamlScalarNode.Value);
+                }
+                catch (Exception e)
+                {
+                    throw new YamlException(String.Format("{0} was unparseable as type {1}: {2}", name, targetType.ToString(),
+                        e.ToString()));
+                }
+            }
+
+
+            public static dynamic GetList(IDictionary<YamlNode, YamlNode> children, string name)
+            {
+                YamlNode needle;
+                if (children.TryGetValue(new YamlScalarNode { Value = name }, out needle))
+                {
+                    // needle should be a YamlSequenceNode whose children contain one or more YamlMappingNode
+                    foreach (var node in ((YamlSequenceNode)needle).Children)
+                    { 
+                        Logger.InfoFormat("node is {0}", node.GetType());
+                    }
+
+                }
+                return null;
+            }
+
+            public static dynamic GetOptionalValue(IDictionary<YamlNode, YamlNode> children, string name,
+                Type targetType,
+                dynamic overrideValue = null)
+            {
+                YamlNode needle;
+                if (!children.TryGetValue(new YamlScalarNode {Value = name}, out needle))
+                {
+                    return overrideValue;
+                }
+                var converter = TypeDescriptor.GetConverter(targetType);
+                var yamlScalarNode = (YamlScalarNode) needle;
+                try
+                {
+                    return converter.ConvertFromString(yamlScalarNode.Value);
+                }
+                catch (Exception)
+                {
+                    return overrideValue;
+                }
+            }
+
+        }
 
         /// <summary>
         /// A class to allow easy grabbing of assembly info; we use this in various places to
