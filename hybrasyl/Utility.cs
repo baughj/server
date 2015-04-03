@@ -20,14 +20,25 @@
  *            Kyle Speck    <kojasou@hybrasyl.com>
  */
 
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using Community.CsharpSqlite;
+using IronPython.Modules;
 using log4net;
+using log4net.Filter;
+using log4net.Repository.Hierarchy;
+using Microsoft.Scripting.Runtime;
+using Newtonsoft.Json.Serialization;
 using SharpYaml;
+using SharpYaml.Schemas;
 using SharpYaml.Serialization;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using SharpYaml.Tokens;
 using Version = System.Version;
 
 namespace Hybrasyl
@@ -413,6 +424,188 @@ namespace Hybrasyl
     }
     namespace Utility
     {
+
+        public class HybrasylYamlProcessor
+        {
+            private Dictionary<string, dynamic> _schema;
+
+            public static readonly ILog Logger =
+                LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+            public HybrasylYamlProcessor(YamlStream schema)
+            {
+                var mapping = (YamlMappingNode) schema.Documents[0].RootNode;
+                _schema = YamlHelper.GetDictionary(mapping.Children);
+            }
+
+            public bool ValidateList(List<dynamic> schema, List<dynamic> target)
+            {
+                return false;
+            }
+
+            private Dictionary<String, dynamic> _getSchemaElement(String element, List<String> parent = null)
+            {
+                if (parent == null)
+                {
+                    //Logger.InfoFormat("_getSchemaElement: Looking up {0}", element);
+                    dynamic returnValue;
+                    if (_schema.TryGetValue(element, out returnValue))
+                    {
+                        return returnValue;
+                    }
+                    throw new YamlException(String.Format("Schema element for {0}: not found, aborting", element));
+                }
+                //Logger.InfoFormat("_getSchemaElement: Looking up {0}, parent is {1}", element, String.Join(", ", parent));
+
+                // Pop the parent dictionary off the list
+                dynamic current = _schema;
+                var path = parent.Concat(new List<String> {element});
+                foreach (var scope in path)
+                {
+                    var currentDict = current as Dictionary<String, dynamic>;
+                    if (currentDict == null)
+                        throw new YamlException("What the actual fuck");
+                    if (!currentDict.TryGetValue(scope, out current))
+                        throw new YamlException(String.Format("scope {0} not found", String.Join(", ", path)));
+                    //Logger.InfoFormat("  scope was: {0}", scope);
+                }
+
+
+                return current;
+
+
+            }
+
+            public dynamic isValid(dynamic type, dynamic value, List<String> scope)
+            {
+                TypeConverter converter;
+                switch ((String) type.ToLower())
+                {
+                    case "int32":
+                    {
+                        converter = TypeDescriptor.GetConverter(typeof (Int32));
+                    }
+                        break;
+                    case "string":
+                    {
+                        converter = TypeDescriptor.GetConverter(typeof (String));
+
+                    }
+                        break;
+                    case "ushort":
+                    {
+                        converter = TypeDescriptor.GetConverter(typeof (ushort));
+
+                    }
+                        break;
+                    case "uint16":
+                    {
+                        converter = TypeDescriptor.GetConverter(typeof (UInt16));
+
+                    }
+                        break;
+                    case "byte":
+                    {
+                        converter = TypeDescriptor.GetConverter(typeof (byte));
+
+                    }
+                        break;
+                    default:
+                    {
+                        throw new YamlException("invalid type");
+                    }
+                }
+                try
+                {
+                    converter.ConvertFromString(value);
+                }
+                catch
+                {
+                    return false;
+                }
+                return true;
+            }
+
+
+            public
+                void _recursivelyValidate(Dictionary<String, dynamic> target,
+                List<String> parent = null)
+            {
+
+                foreach (KeyValuePair<String, dynamic> entry in target)
+                {
+                    //var dict = entry.Value as Dictionary<String, dynamic>;
+                    var schemaDict = _getSchemaElement(entry.Key, parent);
+                    //if (parent != null)
+                        //Logger.InfoFormat("Validating {0} in {1}", entry.Key, String.Join(", ", parent));
+
+                    //if (dict == null)
+                    //    throw new YamlException("I don't know what is wrong with your file, but it's fucked.");
+
+                    dynamic type;
+                    if (schemaDict.TryGetValue("type", out type))
+                    {
+                        switch ((String) type.ToLower())
+                        {
+                            case "list":
+                            {
+                                //Logger.InfoFormat("Unhandled list");
+                            }
+                                break;
+                            case "dict":
+                            {
+                                //Logger.InfoFormat("Unhandled dict");
+                            }
+                                break;
+                            case "list_of_dict":
+                            {
+                                dynamic subelement;
+
+                                if (schemaDict.TryGetValue("subelement", out subelement))
+                                {
+                                    if (parent == null)
+                                        parent = new List<String>();
+                                    parent.Add(entry.Key);
+                                    parent.Add("subelement");
+                                    if (entry.Value is List<dynamic>)
+                                    {
+                                        foreach (var element in entry.Value)
+                                            _recursivelyValidate(element, parent);
+                                        // Now that we've navigated through our list, reset the parent
+                                        parent = null;
+                                    }
+                                }
+                            } break;
+                            default:
+                            {
+                                // Attempt simple validation
+                               /* if (isValid(type, entry.Value, parent))
+                                    //Logger.InfoFormat("{0}: valid {1}", type, entry.Key);
+                                else
+                                    //Logger.ErrorFormat("{0}: invalid {1}", type, entry.Key);
+                                */
+                            }
+                                break;
+                        }                        
+                    }
+                    else // Type is not defined?
+                        throw new YamlException(String.Format("{0}: type is required!", entry.Key));
+                }
+
+            }
+
+            public
+                bool Validate(YamlStream stream)
+            {
+                var mapping = (YamlMappingNode) stream.Documents[0].RootNode;
+                var input = YamlHelper.GetDictionary(mapping.Children);
+
+                _recursivelyValidate(input);
+
+                return false;
+            }
+
+        }
 
         public static class YamlHelper
         {
