@@ -182,16 +182,25 @@ namespace Hybrasyl
             Initialize();
         }
 
-        public Map(YamlStream stream, String filename)
+        public Map(YamlStream stream, String filename, World theWorld)
         {
             Initialize();
             // You may be wondering why we do it this way, vs just serializing or deserializing a 
             // document. This method, although more wordy / lengthy, turns out to be about 7x faster
             // than deserializing.
             var mapping = (YamlMappingNode) stream.Documents[0].RootNode;
-            var mapdata = YamlHelper.GetDictionary(mapping.Children);
+            World = theWorld;
+            try
+            {
+                World.YamlProcessors["map.yml"].Validate(stream);
+            }
+            catch (Exception e)
+            {
+                Logger.ErrorFormat("{0}: error {1}", filename, e.Message);
+            }
+            // var mapdata = YamlHelper.GetDictionary(mapping.Children);
 
-            Id = YamlHelper.GetRequiredValue(mapdata, "id", typeof(ushort));
+            /*        Id = YamlHelper.GetRequiredValue(mapdata, "id", typeof(ushort));
             Size = YamlHelper.GetRequiredValue(mapdata, "size", typeof(String));
             Name = YamlHelper.GetRequiredValue(mapdata, "name", typeof(String));
             Music = YamlHelper.GetOptionalValue(mapdata, "music", typeof(byte), byte.MinValue);
@@ -225,9 +234,7 @@ namespace Hybrasyl
                     throw new YamlException(String.Format("{0}: warps must be a list of warps", filename));
 
             }
-
-
-
+            */
         }
 
         public List<VisibleObject> GetTileContents(int x, int y)

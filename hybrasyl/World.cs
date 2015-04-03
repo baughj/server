@@ -25,6 +25,7 @@ using Hybrasyl.Dialogs;
 using Hybrasyl.Enums;
 using Hybrasyl.Objects;
 using Hybrasyl.Properties;
+using Hybrasyl.Utility;
 using log4net;
 using log4net.Core;
 using System;
@@ -40,6 +41,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Timers;
+using SharpYaml;
+using SharpYaml.Serialization;
 
 namespace Hybrasyl
 {
@@ -81,6 +84,8 @@ namespace Hybrasyl
         public static ConcurrentDictionary<Int64, User> ActiveUsers { get; private set; }
         public ConcurrentDictionary<string, long> ActiveUsersByName { get; set; }
 
+        public Dictionary<string, HybrasylYamlProcessor> YamlProcessors { get; set; } 
+
         private Thread ConsumerThread { get; set; }
 
         // Timers
@@ -115,12 +120,15 @@ namespace Hybrasyl
             MessageQueue = new BlockingCollection<HybrasylMessage>(new ConcurrentQueue<HybrasylMessage>());
             ActiveUsers = new ConcurrentDictionary<long, User>();
             ActiveUsersByName = new ConcurrentDictionary<String, long>();
+            YamlProcessors = new Dictionary<string, HybrasylYamlProcessor>();
 
             // Timers = new ConcurrentBag<Timer>();
         }
 
         public void InitWorld()
         {
+            LoadYamlSchema();
+            YAMLDataTest();
             LoadData();
             CompileScripts();
             LoadMetafiles();
@@ -129,6 +137,29 @@ namespace Hybrasyl
             SetControlMessageHandlers();
             SetMerchantMenuHandlers();
             Logger.InfoFormat("Hybrasyl server ready");
+        }
+
+        private void LoadYamlSchema()
+        {
+            var schemaPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Hybrasyl",
+                "world", "schema");
+
+            var schemaDirectory = new DirectoryInfo(schemaPath);
+
+            var schemata = schemaDirectory.GetFiles("*.yml");
+
+            Logger.InfoFormat("Loading schemata YAML: {0} files found", schemata.Count());
+
+            foreach (var file in schemata)
+            {
+                using (var reader = File.OpenText(file.FullName))
+                {
+                    var yaml = new YamlStream();
+                    yaml.Load(reader);
+                    YamlProcessors[file.Name] = new HybrasylYamlProcessor(yaml);
+                    Logger.InfoFormat("{0}: loaded successfully", file.Name);
+                }
+            }    
         }
 
         private void LoadReactors()
@@ -269,6 +300,40 @@ namespace Hybrasyl
                 return count != 0;
 
             }
+        }
+
+        private void YAMLDataTest()
+        {
+            // Try to load maps, bro.
+            var yamlpath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Hybrasyl", "world", "yaml");
+            var mapsDirectory = new DirectoryInfo(Path.Combine(yamlpath, "maps"));
+
+            var maps = mapsDirectory.GetFiles("*.yml");
+
+            Logger.InfoFormat("Loading maps YAML: {0} maps found", maps.Count());
+
+            foreach (var file in maps)
+            {
+                using (var reader = File.OpenText(file.FullName))
+                {
+                    var yaml = new YamlStream();
+                    try
+                    {
+                        yaml.Load(reader);
+                        var newmap = new Map(yaml, file.Name, this);
+                        newmap.World = this;
+                    }
+                    catch (SyntaxErrorException e)
+                    {
+                        Logger.ErrorFormat("{0}: syntax error encountered, YAML is unparseable!", file.Name);
+                    }
+                    catch (YamlException e)
+                    {
+                        Logger.ErrorFormat("{0}: {1}", file.Name, e.ToString());
+                    }
+                }
+            }
+            Logger.InfoFormat("Map parsing complete");
         }
 
         private void LoadData()
