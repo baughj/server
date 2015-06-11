@@ -23,7 +23,10 @@
 using C3;
 using Hybrasyl.Objects;
 using Hybrasyl.Properties;
+using Hybrasyl.Utility;
 using log4net;
+using SharpYaml;
+using SharpYaml.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -134,9 +137,11 @@ namespace Hybrasyl
 
     public class Map
     {
-        public static readonly ILog Logger = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-        
+        public static readonly ILog Logger =
+            LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         public ushort Id { get; set; }
+        public String Size { get; set; }    
         public byte X { get; set; }
         public byte Y { get; set; }
         public string Name { get; set; }
@@ -160,17 +165,76 @@ namespace Hybrasyl
         public Dictionary<Tuple<byte, byte>, Signpost> Signposts { get; set; }
         public Dictionary<Tuple<byte, byte>, Reactor> Reactors { get; set; }
 
-        public Map()
+        private void Initialize()
         {
             RawData = new byte[0];
             Objects = new HashSet<VisibleObject>();
             Users = new Dictionary<string, User>();
             Warps = new List<Warp>();
             WorldWarps = new Dictionary<Tuple<byte, byte>, WorldWarp>();
-            EntityTree = new QuadTree<VisibleObject>(1, 1, X, Y);
             Doors = new Dictionary<Tuple<byte, byte>, Objects.Door>();
             Signposts = new Dictionary<Tuple<byte, byte>, Signpost>();
             Reactors = new Dictionary<Tuple<byte, byte>, Reactor>();
+        }
+
+        public Map()
+        {
+            Initialize();
+        }
+
+        public Map(YamlStream stream, String filename, World theWorld)
+        {
+            Initialize();
+            // You may be wondering why we do it this way, vs just serializing or deserializing a 
+            // document. This method, although more wordy / lengthy, turns out to be about 7x faster
+            // than deserializing.
+            var mapping = (YamlMappingNode) stream.Documents[0].RootNode;
+            World = theWorld;
+            try
+            {
+                World.YamlProcessors["map.yml"].Validate(stream);
+            }
+            catch (Exception e)
+            {
+                Logger.ErrorFormat("{0}: error {1}", filename, e.Message);
+            }
+            // var mapdata = YamlHelper.GetDictionary(mapping.Children);
+
+            /*        Id = YamlHelper.GetRequiredValue(mapdata, "id", typeof(ushort));
+            Size = YamlHelper.GetRequiredValue(mapdata, "size", typeof(String));
+            Name = YamlHelper.GetRequiredValue(mapdata, "name", typeof(String));
+            Music = YamlHelper.GetOptionalValue(mapdata, "music", typeof(byte), byte.MinValue);
+
+            dynamic warps;
+            if (mapdata.TryGetValue("warps", out warps))
+            {
+                if (warps is List<dynamic>)
+                {
+                    var numWarps = 0;
+                    foreach (var warp in warps as List<dynamic>)
+                    {
+                        numWarps++;
+                        var errorMsg = String.Format("{0}: warp #{1}: {{2}} is required", filename, numWarps);
+
+                        var x = YamlHelper.GetRequiredValue(warp, "x", typeof(byte), errorMsg);
+                        var y = YamlHelper.GetRequiredValue(warp, "y", typeof(byte), errorMsg);
+                        var targetX = YamlHelper.GetRequiredValue(warp, "target_x", typeof(byte), errorMsg);
+                        var targetY = YamlHelper.GetRequiredValue(warp, "target_y", typeof(byte), errorMsg);
+                        var targetMap = YamlHelper.GetRequiredValue(warp, "target_map", typeof(ushort), errorMsg);
+                        var minimumAbility = YamlHelper.GetOptionalValue(warp, "min_ab", typeof (byte), byte.MinValue);
+                        var minimumLevel = YamlHelper.GetOptionalValue(warp, "min_lev", typeof(byte), byte.MinValue);
+                        var maximumLevel = YamlHelper.GetOptionalValue(warp, "max_lev", typeof(byte), byte.MaxValue);
+                        var mobsCanUse = YamlHelper.GetOptionalValue(warp, "mob_use", typeof (bool), false);
+                        Warps.Add(new Warp(x, y, targetMap, targetX, targetY, minimumLevel, maximumLevel, minimumAbility,
+                            mobsCanUse));
+                    }
+
+                }
+                else
+                    throw new YamlException(String.Format("{0}: warps must be a list of warps", filename));
+
+            }
+            */
         }
 
         public List<VisibleObject> GetTileContents(int x, int y)
@@ -214,7 +278,7 @@ namespace Hybrasyl
         public bool Load()
         {
             IsWall = new bool[X, Y];
-            var filename = Path.Combine(Constants.DataDirectory, string.Format("maps\\lod{0}.map", Id));
+            var filename = Path.Combine(Constants.DataDirectory, string.Format("world\\mapfiles\\lod{0}.map", Id));
 
             if (File.Exists(filename))
             {
@@ -558,6 +622,22 @@ namespace Hybrasyl
         public byte MaximumLevel { get; set; }
         public byte MinimumAbility { get; set; }
         public bool MobsCanUse { get; set; }
+
+        public Warp(byte x, byte y, ushort destinationMap, byte destinationX, byte destinationY,
+            byte minimumLevel = 1,
+            byte maximumLevel = 99, byte minimumAbility = 0, bool mobsCanUse = true) : this()
+        {
+            X = x;
+            Y = y;
+            DestinationMap = destinationMap;
+            DestinationY = destinationY;
+            DestinationX = destinationX;
+            MinimumAbility = minimumAbility;
+            MinimumLevel = minimumLevel;
+            MaximumLevel = maximumLevel;
+            MobsCanUse = mobsCanUse;
+        }
+
     }
 
     public struct WorldWarp

@@ -20,12 +20,18 @@
  *            Kyle Speck    <kojasou@hybrasyl.com>
  */
 
+using Hybrasyl.Enums;
+using IronPython.Runtime.Exceptions;
 using log4net;
+using SharpYaml;
+using SharpYaml.Serialization;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Version = System.Version;
 
 namespace Hybrasyl
 {
@@ -408,9 +414,332 @@ namespace Hybrasyl
         public const int INFO = 6;
         public const int DEBUG = 7;
     }
-
     namespace Utility
     {
+
+
+        public class HybrasylYamlProcessor
+        {
+            private Dictionary<string, dynamic> _schema;
+            private Type _type;
+            public Dictionary<string, dynamic> output; 
+
+            public static readonly ILog Logger =
+                LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+            public HybrasylYamlProcessor(YamlStream schema, Type hybrasylType)
+            {
+                var mapping = (YamlMappingNode) schema.Documents[0].RootNode;
+                _schema = GetDictionary(mapping.Children);
+                _type = hybrasylType;
+            }
+
+            public bool ValidateList(List<dynamic> schema, List<dynamic> target)
+            {
+                return false;
+            }
+
+            private void RaiseParseError(String node, String error = "", IEnumerable<String> parent = null, int? subelement = null)
+            {
+                string errorMessage = parent != null ? 
+                    String.Format("{0}: {1}", error, String.Join(".", parent)) : 
+                    String.Format("{0}: {1}", node, error);
+
+                if (subelement != null)
+                    errorMessage = String.Format("{0} (subelement #{1}", errorMessage, subelement);
+
+                throw new YamlException(errorMessage);
+            }
+
+            private Dictionary<String, dynamic> _getSchemaElement(String element, IEnumerable<string> parent = null)
+            {
+                if (parent == null)
+                {
+                    dynamic returnValue;
+                    if (_schema.TryGetValue(element, out returnValue))
+                    {
+                        return returnValue;
+                    }
+                    RaiseParseError(element, "Schema element not found!");
+                }
+
+                // Pop the parent dictionary off the list
+                dynamic current = _schema;
+                var path = parent.Concat(new List<String> {element});
+                var enumerable = path as IList<string> ?? path.ToList();
+                foreach (var scope in enumerable)
+                {
+                    var currentDict = current as Dictionary<String, dynamic>;
+                    if (currentDict == null)
+                        RaiseParseError(element, "No schema entry exists", enumerable);
+                    if (!currentDict.TryGetValue(scope, out current))
+                        RaiseParseError(element, "scope not found in schema", enumerable);
+                }
+                return current;
+            }
+
+            public dynamic ReturnTypedValue(dynamic type, dynamic value)
+            {
+                TypeConverter converter;
+                switch ((String) type.ToLower())
+                {
+                    case "int32":
+                    {
+                        converter = TypeDescriptor.GetConverter(typeof (Int32));
+                    }
+                        break;
+                    case "string":
+                    {
+                        converter = TypeDescriptor.GetConverter(typeof (String));
+
+                    }
+                        break;
+                    case "ushort":
+                    {
+                        converter = TypeDescriptor.GetConverter(typeof (ushort));
+
+                    }
+                        break;
+                    case "uint16":
+                    {
+                        converter = TypeDescriptor.GetConverter(typeof (UInt16));
+
+                    }
+                        break;
+                    case "byte":
+                    {
+                        converter = TypeDescriptor.GetConverter(typeof (byte));
+
+                    }
+                        break;
+                    default:
+                    {
+                        throw new ArgumentException(String.Format("unsupported type {0}", type));
+                    }
+                }
+                try
+                {
+                    return converter.ConvertFromString(value);
+                }
+                catch
+                {
+                    throw new TypeErrorException(String.Format("Value {0}: isn't a {1}", value,
+                        type));
+                }
+                return true;
+            }
+
+            /// <summary>
+            /// Descend a list of YamlNodes and return native C# types.
+            /// </summary>
+            /// <param name="children"></param>
+            /// <returns>A list of strings.</returns>
+            public static List<dynamic> GetList(IList<YamlNode> children)
+            {
+                var thelist = new List<dynamic>();
+
+                foreach (var node in children)
+                {
+                    if (node is YamlSequenceNode)
+                    {
+                        var descendant = node as YamlSequenceNode;
+                        thelist.Add(GetList(descendant.Children));
+                    }
+                    if (node is YamlMappingNode)
+                    {
+                        var descendant = node as YamlMappingNode;
+                        thelist.Add(GetDictionary(descendant.Children));
+                    }
+                    if (node is YamlScalarNode)
+                    {
+                        thelist.Add(node.ToString());
+                    }
+                }
+                return thelist;
+            }
+
+            /// <summary>
+            /// Recursively descend a YamlNode dictionary. If name is specified, find name in a passed mapping,
+            /// and only descend that. 
+            /// </summary>
+            /// <param name="children"></param>
+            /// <param name="name"></param>
+            /// <returns>A dictionary of string, dynamic which can contain string values, lists of dynamics, or subdictionaries.</returns>
+            public static Dictionary<String, dynamic> GetDictionary(IDictionary<YamlNode, YamlNode> children, String name=null)
+            {
+                var theDictionary = new Dictionary<String, dynamic>();
+
+                foreach (KeyValuePair<YamlNode, YamlNode> entry in children)
+                {
+                    if (entry.Value is YamlSequenceNode)
+                    {
+                        var descendant = entry.Value as YamlSequenceNode;
+                        theDictionary.Add(entry.Key.ToString(), GetList(descendant.Children));
+                    }
+                    if (entry.Value is YamlMappingNode)
+                    {
+                        var descendant = entry.Value as YamlMappingNode;
+                        theDictionary.Add(entry.Key.ToString(), GetDictionary(descendant.Children));
+                    }
+                    if (entry.Value is YamlScalarNode)
+                    {
+                        theDictionary.Add(entry.Key.ToString(), entry.Value.ToString());
+                    }
+                }
+                return theDictionary;
+            }
+
+            private void _addData(dynamic data, String node, YamlDataType type, List<String> parent = null)
+            {
+                var scope = "";
+                if (parent != null)
+                    scope = String.Format("{0}.{1}", node, String.Join(".", parent));
+                else
+                    scope = node;
+                Logger.InfoFormat("adding data, type {0}, at node {1}", type, scope);
+                /*
+                dynamic target;
+                if (parent != null)
+                {
+                    foreach (var path in parent)
+                    {
+                        if (!output.TryGetValue(path, out target))
+                        {
+                            Logger.InfoFormat("addData: path {0} does not exist");
+                        }
+                        else
+                    }
+                }
+                 */
+            }
+
+            private
+                void _recursivelyValidate(Dictionary<String, dynamic> target,
+                    List<String> parent = null)
+            {
+
+                foreach (var entry in target)
+                {
+                    var schemaDict = _getSchemaElement(entry.Key, parent);
+                    dynamic type;
+                    
+                    if (schemaDict.TryGetValue("type", out type))
+                    {
+                        switch ((String) type.ToLower())
+                        {
+                            case "list":
+                            {
+                                dynamic listType;
+                                if (schemaDict.TryGetValue("list_type", out listType))
+                                {
+                                    dynamic valid;
+                                    List<dynamic> returnList;
+
+                                    if (entry.Value is List<dynamic>)
+                                        returnList = new List<dynamic>();
+                                    else
+                                        returnList = new List<dynamic> {entry.Value};
+
+                                    foreach (var value in entry.Value)
+                                    {
+                                        try
+                                        {
+                                            returnList.Add(ReturnTypedValue(listType, value));
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            if (ex is ArgumentException || ex is TypeErrorException)
+                                                RaiseParseError(entry.Key, ex.Message, parent, returnList.Count());
+                                            else
+                                                RaiseParseError(entry.Key, "Unknown error!", parent, returnList.Count());
+                                        }
+                                    }
+                                    if (schemaDict.TryGetValue("valid", out valid))
+                                    {
+                                        // Ensure that the list elements are valid
+                                        var validList = new List<string>();
+                                        if (valid is String)
+                                            validList.Add(valid);
+                                        else if (valid is List<String>)
+                                            validList = valid as List<String>;
+                                        else
+                                            RaiseParseError(entry.Key, "schema error: list with valid defined, but valid is not a list of values or a singular value", 
+                                                parent);
+
+                                        if (returnList.Except(validList).Any())
+                                            RaiseParseError(entry.Key,
+                                                "list contains invalid values (valid is specified in schema)", parent);
+                                    }
+                                    // List is valid
+                                    _addData(returnList, entry.Key, YamlDataType.YamlList, parent);
+                                }
+                                else
+                                    RaiseParseError(entry.Key, "schema error: list_type must be defined for type list", parent);
+                            }
+                                break;
+                            case "dict":
+                            {
+                                Logger.InfoFormat("Unhandled dict");
+                            }
+                                break;
+                            case "list_of_dict":
+                            {
+                                dynamic subelement;
+
+                                if (schemaDict.TryGetValue("subelement", out subelement))
+                                {
+                                    if (parent == null)
+                                        parent = new List<String>();
+                                    parent.Add(entry.Key);
+                                    parent.Add("subelement");
+                                    if (entry.Value is List<dynamic>)
+                                    {
+                                        foreach (var element in entry.Value)
+                                            _recursivelyValidate(element, parent);
+                                        // Now that we've navigated through our list, reset the parent
+                                        parent = null;
+                                    }
+                                }
+                                else
+                                    throw new YamlException(
+                                        String.Format(
+                                            "{0}: schema indicates type is list_of_dict, but no subelement defined!",
+                                            entry.Key));
+                            }
+                                break;
+                            default:
+                            {
+                                try
+                                {
+                                    _addData(ReturnTypedValue(type, entry.Value), entry.Key, YamlDataType.YamlScalar,
+                                        parent);
+                                }
+                                catch (Exception ex)
+                                {
+                                    RaiseParseError(entry.Key, ex.Message, parent);                                    
+                                }
+                            }
+                                break;
+                        }
+                    }
+                    else // Type is not defined?
+                        throw new YamlException(String.Format("{0}: type is required!", entry.Key));
+                }
+
+            }
+
+            public
+                bool Validate(YamlStream stream)
+            {
+                var mapping = (YamlMappingNode) stream.Documents[0].RootNode;
+                var input = GetDictionary(mapping.Children);
+
+                _recursivelyValidate(input);
+
+                return false;
+            }
+
+        }
 
         /// <summary>
         /// A class to allow easy grabbing of assembly info; we use this in various places to

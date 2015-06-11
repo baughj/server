@@ -26,6 +26,14 @@ namespace Hybrasyl
 {
     namespace Enums
     {
+        public enum YamlDataType : int
+        {
+            YamlScalar = 0,
+            YamlList = 1,
+            YamlDict = 2,
+            YamlListOfDict = 3
+        }
+
         public enum PrivateMessageType : int
         {
             Whisper = 0,
