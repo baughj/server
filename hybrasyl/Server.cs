@@ -22,16 +22,12 @@
 
 using log4net;
 using System;
-using System.CodeDom;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Security.Policy;
 using System.Threading;
-using IronPython.Modules;
-using Microsoft.Scripting.Utils;
 
 namespace Hybrasyl
 {
@@ -72,7 +68,7 @@ namespace Hybrasyl
             PacketHandlers = new WorldPacketHandler[256];
             ControlMessageHandlers = new ControlMessageHandler[64];
             ExpectedConnections = new ConcurrentDictionary<uint, Redirect>();
-            for (int i = 0; i < 256; ++i)
+            for (var i = 0; i < 256; ++i)
                 PacketHandlers[i] = (c, p) => Logger.WarnFormat("Server: Unhandled opcode 0x{0:X2}", p.Opcode);
 
         }
@@ -134,9 +130,9 @@ namespace Hybrasyl
         {
             // TODO: @norrismiv async callbacks+inheritance? and/or can these callbacks suck less?
             AllDone.Set();
-            Socket clientSocket = (Socket) ar.AsyncState;
-            Socket handler = clientSocket.EndAccept(ar);
-            Client client = new Client(handler, this);
+            var clientSocket = (Socket) ar.AsyncState;
+            var handler = clientSocket.EndAccept(ar);
+            var client = new Client(handler, this);
             Clients.TryAdd(handler.Handle, client);
             GlobalConnectionManifest.RegisterClient(client);
             
@@ -175,7 +171,7 @@ namespace Hybrasyl
         public void SendCallback(IAsyncResult ar)
         {
 
-            ClientState state = (ClientState) ar.AsyncState;
+            var state = (ClientState) ar.AsyncState;
             Client client;
             Logger.InfoFormat("EndSend");
             try
@@ -211,10 +207,10 @@ namespace Hybrasyl
 
         public void ReadCallback(IAsyncResult ar)
         {
-            ClientState state = (ClientState) ar.AsyncState;
+            var state = (ClientState) ar.AsyncState;
             Client client;
             SocketError errorCode;
-            int bytesRead = 0;
+            var bytesRead = 0;
 
             if (this is Login)
             {
@@ -280,7 +276,7 @@ namespace Hybrasyl
                         else
                         {
                             // We've received an intact packet, pop it off
-                            ClientPacket receivedPacket =
+                            var receivedPacket =
                                 new ClientPacket(state.ReceiveBufferPop(packetLength).ToArray());
                             // Also remove it from our local buffer...this seems kinda gross to me
                             inboundBytes =
@@ -396,7 +392,7 @@ namespace Hybrasyl
             if (key.Length != EncryptionKey.Length || name != Name || seed != EncryptionSeed)
                 return false;
 
-            for (int i = 0; i < key.Length; ++i)
+            for (var i = 0; i < key.Length; ++i)
             {
                 if (key[i] != EncryptionKey[i])
                     return false;

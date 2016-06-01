@@ -20,8 +20,6 @@
  *            Kyle Speck    <kojasou@hybrasyl.com>
  */
 
-using System.Runtime.Serialization;
-using IronPython.Modules;
 using log4net;
 using System;
 using System.Collections.Concurrent;
@@ -31,14 +29,13 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-using IronPython.Compiler;
 using Microsoft.Scripting.Utils;
 
 namespace Hybrasyl
 {
     public class ClientState
     {
-        private const int BufferSize = 1024;
+        private const int BufferSize = 65535;
         private byte[] _buffer = new byte[BufferSize];
         public bool Recieving;
         private ConcurrentQueue<ServerPacket> _sendBuffer = new ConcurrentQueue<ServerPacket>(); 
@@ -149,17 +146,7 @@ namespace Hybrasyl
         public byte ServerOrdinal = 0x00;
         //private byte clientOrdinal = 0x00;
 
-        public String RemoteAddress
-        {
-            get
-            {
-                if (Socket != null)
-                {
-                    return ((System.Net.IPEndPoint) Socket.RemoteEndPoint).Address.ToString();
-                }
-                return "nil";
-            }
-        }
+        public string RemoteAddress => Socket != null ? ((System.Net.IPEndPoint) Socket.RemoteEndPoint).Address.ToString() : "nil";
 
         public byte EncryptionSeed { get; set; }
         public byte[] EncryptionKey { get; set; }
@@ -271,12 +258,9 @@ namespace Hybrasyl
         /// <returns></returns>
         public bool IsHeartbeatValid(byte a, byte b)
         {
-            if (a == _heartbeatA && b == _heartbeatB)
-            {
-                Interlocked.Exchange(ref _byteHeartbeatReceived, DateTime.Now.Ticks);
-                return true;    
-            }
-            return false;
+            if (a != _heartbeatA || b != _heartbeatB) return false;
+            Interlocked.Exchange(ref _byteHeartbeatReceived, DateTime.Now.Ticks);
+            return true;
         }
 
         /// <summary>
@@ -288,13 +272,10 @@ namespace Hybrasyl
         /// <returns>Whether or not the heartbeat is valid</returns>
         public bool IsHeartbeatValid(int localTickCount, int clientTickCount)
         {
-            if (_localTickCount == localTickCount)
-            {
-                Interlocked.Exchange(ref _clientTickCount, clientTickCount);
-                Interlocked.Exchange(ref _tickHeartbeatReceived, DateTime.Now.Ticks);
-                return true;
-            }
-            return false;
+            if (_localTickCount != localTickCount) return false;
+            Interlocked.Exchange(ref _clientTickCount, clientTickCount);
+            Interlocked.Exchange(ref _tickHeartbeatReceived, DateTime.Now.Ticks);
+            return true;
         }
 
         /// <summary>
@@ -398,7 +379,7 @@ namespace Hybrasyl
 
         public void GenerateKeyTable(string seed)
         {
-            string table = Crypto.HashString(seed, "MD5");
+            var table = Crypto.HashString(seed, "MD5");
             table = Crypto.HashString(table, "MD5");
             for (var i = 0; i < 31; i++)
             {
@@ -425,7 +406,7 @@ namespace Hybrasyl
 
             var endPoint = Socket.RemoteEndPoint as IPEndPoint;
 
-            byte[] addressBytes = IPAddress.IsLoopback(endPoint.Address) ? IPAddress.Loopback.GetAddressBytes() : Game.IpAddress.GetAddressBytes();
+            var addressBytes = IPAddress.IsLoopback(endPoint.Address) ? IPAddress.Loopback.GetAddressBytes() : Game.IpAddress.GetAddressBytes();
 
             Array.Reverse(addressBytes);
 

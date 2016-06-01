@@ -20,10 +20,8 @@
  *            Kyle Speck    <kojasou@hybrasyl.com>
  */
 
-using System.Runtime.Serialization;
 using Hybrasyl.Enums;
 using Hybrasyl.Objects;
-using Hybrasyl.Properties;
 using log4net;
 using System;
 using System.Collections;
@@ -31,7 +29,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Reflection;
 
 namespace Hybrasyl
 {
@@ -77,17 +74,11 @@ namespace Hybrasyl
 
         }
 
-        public bool ConditionsValid
-        {
-            get
-            {
-                return _source.Map == _target.Map && _source.IsInViewport(_target) &&
-                       _target.IsInViewport(_source) &&
-                       _source.Status.HasFlag(PlayerStatus.InExchange) &&
-                       _target.Status.HasFlag(PlayerStatus.InExchange) &&
-                       _active;
-            }
-        }
+        public bool ConditionsValid => _source.Map == _target.Map && _source.IsInViewport(_target) &&
+                                       _target.IsInViewport(_source) &&
+                                       _source.Status.HasFlag(PlayerStatus.InExchange) &&
+                                       _target.Status.HasFlag(PlayerStatus.InExchange) &&
+                                       _active;
 
         public bool AddItem(User giver, byte slot, byte quantity = 1)
         {
@@ -152,7 +143,7 @@ namespace Hybrasyl
 
                 if (quantity > theItem.Count)
                 {
-                    giver.SendSystemMessage(String.Format("You don't have that many {0} to give!", theItem.Name));
+                    giver.SendSystemMessage($"You don't have that many {theItem.Name} to give!");
                     return false;
                 }
 
@@ -163,13 +154,13 @@ namespace Hybrasyl
                 {
                     if (giver == _target)
                     {
-                        _target.SendSystemMessage(String.Format("They can't carry any more {0}", theItem.Name));
-                        _source.SendSystemMessage(String.Format("You can't carry any more {0}.", theItem.Name));
+                        _target.SendSystemMessage($"They can't carry any more {theItem.Name}");
+                        _source.SendSystemMessage($"You can't carry any more {theItem.Name}.");
                     }
                     else
                     {
-                        _source.SendSystemMessage(String.Format("They can't carry any more {0}", theItem.Name));
-                        _target.SendSystemMessage(String.Format("You can't carry any more {0}.", theItem.Name));
+                        _source.SendSystemMessage($"They can't carry any more {theItem.Name}");
+                        _target.SendSystemMessage($"You can't carry any more {theItem.Name}.");
                     }
                     return false;
                 }
@@ -356,7 +347,7 @@ namespace Hybrasyl
             var output = new object[inventory.Size];
             for (byte i = 0; i < inventory.Size; i++)
             {
-                var itemInfo = new Dictionary<String, object>();
+                var itemInfo = new Dictionary<string, object>();
                 if (inventory[i] != null)
                 {
                     itemInfo["Name"] = inventory[i].Name;
@@ -364,14 +355,14 @@ namespace Hybrasyl
                     output[i] = itemInfo;
                 }               
             }
-            Newtonsoft.Json.Linq.JArray ja = Newtonsoft.Json.Linq.JArray.FromObject(output);
+            var ja = Newtonsoft.Json.Linq.JArray.FromObject(output);
             serializer.Serialize(writer, ja);
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            JArray jArray = JArray.Load(reader);
-            Inventory inv = new Inventory(jArray.Count);
+            var jArray = JArray.Load(reader);
+            var inv = new Inventory(jArray.Count);
 
             for (byte i = 0; i < jArray.Count; i++)
             {
@@ -427,105 +418,46 @@ namespace Hybrasyl
 
         #region Equipment Properties
 
-        public Item Weapon
-        {
-            get { return _items[ServerItemSlots.Weapon]; }
-        }
+        public Item Weapon => _items[ServerItemSlots.Weapon];
 
-        public Item Armor
-        {
-            get { return _items[ServerItemSlots.Armor]; }
-        }
+        public Item Armor => _items[ServerItemSlots.Armor];
 
-        public Item Shield
-        {
-            get { return _items[ServerItemSlots.Shield]; }
-        }
+        public Item Shield => _items[ServerItemSlots.Shield];
 
-        public Item Helmet
-        {
-            get { return _items[ServerItemSlots.Helmet]; }
-        }
+        public Item Helmet => _items[ServerItemSlots.Helmet];
 
-        public Item Earring
-        {
-            get { return _items[ServerItemSlots.Earring]; }
-        }
+        public Item Earring => _items[ServerItemSlots.Earring];
 
-        public Item Necklace
-        {
-            get { return _items[ServerItemSlots.Necklace]; }
-        }
+        public Item Necklace => _items[ServerItemSlots.Necklace];
 
-        public Item LRing
-        {
-            get { return _items[ServerItemSlots.LHand]; }
-        }
+        public Item LRing => _items[ServerItemSlots.LHand];
 
-        public Item RRing
-        {
-            get { return _items[ServerItemSlots.RHand]; }
-        }
+        public Item RRing => _items[ServerItemSlots.RHand];
 
-        public Item LGauntlet
-        {
-            get { return _items[ServerItemSlots.LArm]; }
-        }
+        public Item LGauntlet => _items[ServerItemSlots.LArm];
 
-        public Item RGauntlet
-        {
-            get { return _items[ServerItemSlots.RArm]; }
-        }
+        public Item RGauntlet => _items[ServerItemSlots.RArm];
 
-        public Item Belt
-        {
-            get { return _items[ServerItemSlots.Waist]; }
-        }
+        public Item Belt => _items[ServerItemSlots.Waist];
 
-        public Item Greaves
-        {
-            get { return _items[ServerItemSlots.Leg]; }
-        }
+        public Item Greaves => _items[ServerItemSlots.Leg];
 
-        public Item Boots
-        {
-            get { return _items[ServerItemSlots.Foot]; }
-        }
+        public Item Boots => _items[ServerItemSlots.Foot];
 
-        public Item FirstAcc
-        {
-            get { return _items[ServerItemSlots.FirstAcc]; }
-        }
+        public Item FirstAcc => _items[ServerItemSlots.FirstAcc];
 
-        public Item Overcoat
-        {
-            get { return _items[ServerItemSlots.Trousers]; }
-        }
+        public Item Overcoat => _items[ServerItemSlots.Trousers];
 
-        public Item DisplayHelm
-        {
-            get { return _items[ServerItemSlots.Coat]; }
-        }
+        public Item DisplayHelm => _items[ServerItemSlots.Coat];
 
-        public Item SecondAcc
-        {
-            get { return _items[ServerItemSlots.SecondAcc]; }
-        }
+        public Item SecondAcc => _items[ServerItemSlots.SecondAcc];
 
-        public Item ThirdAcc
-        {
-            get { return _items[ServerItemSlots.ThirdAcc]; }
-        }
+        public Item ThirdAcc => _items[ServerItemSlots.ThirdAcc];
+
         #endregion Equipment Properties
 
-        public bool IsFull
-        {
-            get { return Count == Size; }
-        }
-        public int EmptySlots
-        {
-            get { return Size - Count; }
-        }
+        public bool IsFull => Count == Size;
+        public int EmptySlots => Size - Count;
 
         public void RecalculateWeight()
         {
@@ -546,7 +478,7 @@ namespace Hybrasyl
             }
             internal set
             {
-                int index = slot - 1;
+                var index = slot - 1;
                 if (index < 0 || index >= Size)
                     return;
                 if (value == null)
@@ -580,7 +512,7 @@ namespace Hybrasyl
             }
         }
 
-        public bool TryGetValue(String name, out Item item)
+        public bool TryGetValue(string name, out Item item)
         {
             item = null;
             List<Item> itemList;

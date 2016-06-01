@@ -23,7 +23,6 @@
 using Hybrasyl.Dialogs;
 using Hybrasyl.Enums;
 using Hybrasyl.Objects;
-using Hybrasyl.Properties;
 using IronPython.Hosting;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
@@ -53,10 +52,7 @@ namespace Hybrasyl
 
         public bool Execute(params object[] parameters)
         {
-            if (Script != null)
-                return Script.ExecuteFunction(this, parameters);
-            else
-                return Associate.Script.ExecuteFunction(this, parameters);
+            return Script != null ? Script.ExecuteFunction(this, parameters) : Associate.Script.ExecuteFunction(this, parameters);
         }
     }
 
@@ -76,7 +72,7 @@ namespace Hybrasyl
         public HybrasylWorldObject Associate { get; private set; }
 
         public bool Disabled { get; set; }
-        public String CompilationError { get; private set; }
+        public string CompilationError { get; private set; }
         public string LastRuntimeError { get; private set; }
 
         public Script Clone()
@@ -96,8 +92,8 @@ namespace Hybrasyl
             Source = null;
             Processor = processor;
             Disabled = false;
-            CompilationError = String.Empty;
-            LastRuntimeError = String.Empty;
+            CompilationError = string.Empty;
+            LastRuntimeError = string.Empty;
         }
 
         public void AssociateScriptWithObject(WorldObject obj)
@@ -118,7 +114,7 @@ namespace Hybrasyl
         /// <returns>boolean indicating whether the script was reloaded or not</returns>
         public bool Load()
         {
-            String scriptText;
+            string scriptText;
             try
             {
                 scriptText = File.ReadAllText(Path);
@@ -260,7 +256,7 @@ namespace Hybrasyl
         /// </summary>
         /// <param name="name"></param>
         /// <param name="parameters">The parameters to pass to the function.</param>
-        public void ExecuteScriptableFunction(String name, params object[] parameters)
+        public void ExecuteScriptableFunction(string name, params object[] parameters)
         {
             if (Disabled)
                 return;
@@ -321,7 +317,7 @@ namespace Hybrasyl
         // We make an attempt to limit Hybrasyl scripts to stdlib,
         // excluding "dangerous" functions (imports are disallowed outright,
         // along with file i/o or eval/exec/
-        public static readonly String RestrictStdlib = 
+        public static readonly string RestrictStdlib = 
         @"__builtins__.__import__ = None
 __builtins__.reload = None
 __builtins__.open = None 
@@ -351,7 +347,7 @@ __builtins__.raw_input = None
         public bool TryGetScript(string scriptName, out Script script)
         {
             // Try to find "name.py" or "name"
-            if (Scripts.TryGetValue(String.Format("{0}.py", scriptName.ToLower()), out script))
+            if (Scripts.TryGetValue($"{scriptName.ToLower()}.py", out script))
             {
                 return true;
             }
@@ -363,10 +359,10 @@ __builtins__.raw_input = None
             Script script;
             bool exists;
             // Try to find "name.py" or "name"
-            exists = Scripts.TryGetValue(String.Format("{0}.py", scriptName.ToLower()), out script);
+            exists = Scripts.TryGetValue($"{scriptName.ToLower()}.py", out script);
             if (!exists)
             {
-                if (Scripts.TryGetValue(String.Format("{0}", scriptName.ToLower()), out script))
+                if (Scripts.TryGetValue($"{scriptName.ToLower()}", out script))
                     return script;
             }
             else
@@ -464,7 +460,7 @@ __builtins__.raw_input = None
             World = world;
         }
 
-        public HybrasylDialogSequence NewDialogSequence(String sequenceName, params object[] list)
+        public HybrasylDialogSequence NewDialogSequence(string sequenceName, params object[] list)
         {
             var dialogSequence = new HybrasylDialogSequence(sequenceName);
             foreach (var entry in list)
@@ -484,14 +480,14 @@ __builtins__.raw_input = None
             return dialogSequence;
         }
 
-        public HybrasylDialog NewDialog(String displayText, dynamic callback = null)
+        public HybrasylDialog NewDialog(string displayText, dynamic callback = null)
         {
             var dialog = new SimpleDialog(displayText);
             dialog.SetCallbackHandler(callback);
             return new HybrasylDialog(dialog);
         }
 
-        public HybrasylDialog NewTextDialog(String displayText, String topCaption, string bottomCaption, int inputLength = 254, dynamic handler = null, dynamic callback = null)
+        public HybrasylDialog NewTextDialog(string displayText, string topCaption, string bottomCaption, int inputLength = 254, dynamic handler = null, dynamic callback = null)
         {
             var dialog = new TextDialog(displayText, topCaption, bottomCaption, inputLength);
             dialog.setInputHandler(handler);
@@ -499,7 +495,7 @@ __builtins__.raw_input = None
             return new HybrasylDialog(dialog);
         }
 
-        public HybrasylDialog NewOptionsDialog(String displayText, dynamic optionsStructure, dynamic handler = null, dynamic callback = null)
+        public HybrasylDialog NewOptionsDialog(string displayText, dynamic optionsStructure, dynamic handler = null, dynamic callback = null)
         {
             var dialog = new OptionsDialog(displayText);
             dialog.SetCallbackHandler(callback);
@@ -510,9 +506,9 @@ __builtins__.raw_input = None
                 var optionlist = optionsStructure as IronPython.Runtime.List;
                 foreach (var option in optionsStructure)
                 {
-                    if (option is String)
+                    if (option is string)
                     {
-                        dialog.AddDialogOption(option as String);
+                        dialog.AddDialogOption(option as string);
                     }
                 }
                 if (handler != null)
@@ -526,9 +522,9 @@ __builtins__.raw_input = None
                 var hash = optionsStructure as IronPython.Runtime.PythonDictionary;
                 foreach (var key in hash.Keys)
                 {
-                    if (key is String)
+                    if (key is string)
                     {
-                        dialog.AddDialogOption(key as String, hash[key]);
+                        dialog.AddDialogOption(key as string, hash[key]);
                     }
                 }
 
@@ -546,7 +542,7 @@ __builtins__.raw_input = None
             Map = map;
         }
 
-        public bool DropItem(String name, int x = -1, int y = -1)
+        public bool DropItem(string name, int x = -1, int y = -1)
         {
             return false;
         }
@@ -560,7 +556,7 @@ __builtins__.raw_input = None
         internal User User { get; set; }
         internal HybrasylWorld World { get; set; }
         internal HybrasylMap Map { get; set; }
-        public string Name { get { return User.Name; } }
+        public string Name => User.Name;
 
         public HybrasylUser(User user)
         {
@@ -579,7 +575,7 @@ __builtins__.raw_input = None
             return new List<HybrasylUser>();
         }
 
-        public void SetSessionFlag(String flag, dynamic value)
+        public void SetSessionFlag(string flag, dynamic value)
         {
             try
             {
@@ -592,7 +588,7 @@ __builtins__.raw_input = None
             }
         }
 
-        public void SetFlag(String flag, dynamic value)
+        public void SetFlag(string flag, dynamic value)
         {
             try
             {
@@ -605,12 +601,12 @@ __builtins__.raw_input = None
 
         }
 
-        public String GetSessionFlag(String flag)
+        public string GetSessionFlag(string flag)
         {
             return User.GetSessionFlag(flag);
         }
 
-        public String GetFlag(String flag)
+        public string GetFlag(string flag)
         {
             return User.GetFlag(flag);
         }
@@ -631,7 +627,7 @@ __builtins__.raw_input = None
                 User.Effect(x, y, effect, speed);
         }
 
-        public void Teleport(String location)
+        public void Teleport(string location)
         {
 
 
@@ -642,12 +638,12 @@ __builtins__.raw_input = None
             User.SendSound(sound);
         }
 
-        public bool GiveItem(String name)
+        public bool GiveItem(string name)
         {
             // Does the item exist?
             XSD.ItemType theitem;
-            if (Game.World.ItemCatalog.TryGetValue(new Tuple<Sex, String>(User.Sex, name), out theitem) ||
-                Game.World.ItemCatalog.TryGetValue(new Tuple<Sex, String>(Sex.Neutral, name), out theitem))
+            if (Game.World.ItemCatalog.TryGetValue(new Tuple<Sex, string>(User.Sex, name), out theitem) ||
+                Game.World.ItemCatalog.TryGetValue(new Tuple<Sex, string>(Sex.Neutral, name), out theitem))
             {
                 Logger.DebugFormat("giving item {0} to {1}", name, User.Name);
                 var itemobj = Game.World.CreateItem(theitem.Id);
@@ -662,14 +658,14 @@ __builtins__.raw_input = None
             return false;
         }
 
-        public bool TakeItem(String name)
+        public bool TakeItem(string name)
         {
             return false;
         }
 
         public bool GiveExperience(int exp)
         {
-            SystemMessage(String.Format("{0} experience!", exp));
+            SystemMessage($"{exp} experience!");
             User.GiveExperience((uint)exp);
             return true;
         }
@@ -677,38 +673,38 @@ __builtins__.raw_input = None
         public bool TakeExperience(int exp)
         {
             User.Experience -= (uint)exp;
-            SystemMessage(String.Format("Your world spins as your insight leaves you ((-{0} experience!))", exp));
+            SystemMessage($"Your world spins as your insight leaves you ((-{exp} experience!))");
             User.UpdateAttributes(StatUpdateFlags.Experience);
             return true;
         }
 
-        public void SystemMessage(String message)
+        public void SystemMessage(string message)
         {
             // This is a typical client "orange message"
             User.SendMessage(message, Hybrasyl.MessageTypes.SYSTEM_WITH_OVERHEAD);
         }
 
 
-        public void Whisper(String name, String message)
+        public void Whisper(string name, string message)
         {
             User.SendWhisper(name, message);
         }
 
-        public void Mail(String name, String message)
+        public void Mail(string name, string message)
         {
         }
 
-        public bool AddLegendMark(ushort type, String shortName, String legendMark)
+        public bool AddLegendMark(ushort type, string shortName, string legendMark)
         {
             return false;
         }
 
-        public List<String> GetLegendMarks()
+        public List<string> GetLegendMarks()
         {
-            return new List<String>();
+            return new List<string>();
         }
 
-        public void StartDialogSequence(String sequenceName, HybrasylWorldObject associate)
+        public void StartDialogSequence(string sequenceName, HybrasylWorldObject associate)
         {
             DialogSequence newSequence;
             if (User.World.GlobalSequencesCatalog.TryGetValue(sequenceName, out newSequence))
@@ -721,7 +717,7 @@ __builtins__.raw_input = None
 
         }
 
-        public void StartSequence(String sequenceName, HybrasylWorldObject associateOverride = null)
+        public void StartSequence(string sequenceName, HybrasylWorldObject associateOverride = null)
         {
             DialogSequence sequence;
             VisibleObject associate;

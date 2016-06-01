@@ -20,16 +20,8 @@
  *            Kyle Speck    <kojasou@hybrasyl.com>
  */
 
-using FastMember;
 using Hybrasyl.Enums;
-using Hybrasyl.XSD;
-using Hybrasyl.Properties;
-using log4net;
 using System;
-using System.CodeDom;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text.RegularExpressions;
 
 namespace Hybrasyl.Objects
 {
@@ -45,7 +37,7 @@ namespace Hybrasyl.Objects
         /// <param name="userobj">User object to check for meeting this item's requirements.</param>
         /// <param name="message">A reference that will be used in the case of failure to set an appropriate error message.</param>
         /// <returns></returns>
-        public bool CheckRequirements(User userobj, out String message)
+        public bool CheckRequirements(User userobj, out string message)
         {
             // We check a variety of conditions and return the first failure.
 
@@ -140,15 +132,7 @@ namespace Hybrasyl.Objects
             }
         }
 
-        public XSD.WeaponType WeaponType
-        {
-            get
-            {
-                if (Template.Properties.Equipment.WeapontypeSpecified)
-                    return Template.Properties.Equipment.Weapontype;
-                return XSD.WeaponType.none;
-            }
-        }
+        public XSD.WeaponType WeaponType => Template.Properties.Equipment.WeapontypeSpecified ? Template.Properties.Equipment.Weapontype : XSD.WeaponType.none;
         public byte EquipmentSlot => Convert.ToByte(Template.Properties.Equipment.Slot);
         public int Weight => Template.Properties.Physical.Weight;
         public int MaximumStack => Template.Properties.Stackable.Max;
@@ -262,11 +246,9 @@ namespace Hybrasyl.Objects
 
         public override void ShowTo(VisibleObject obj)
         {
-            if (obj is User)
-            {
-                var user = obj as User;
-                user.SendVisibleItem(this);
-            }
+            if (!(obj is User)) return;
+            var user = obj as User;
+            user.SendVisibleItem(this);
         }
     }
 }

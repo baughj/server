@@ -64,7 +64,7 @@ namespace Hybrasyl
                     case 11:
                         return "Fall";
                     default:
-                       return String.Empty;
+                       return string.Empty;
                }
             }
         }
@@ -299,18 +299,18 @@ namespace Hybrasyl
             {
                 var theMatch = regex.Match(hybrasyldate);
                 if (!theMatch.Success) continue;
-                var yearInt = Int32.Parse(theMatch.Groups["Year"].Value);
-                var minuteInt = theMatch.Groups["Minute"].Value != String.Empty
-                    ? Int32.Parse(theMatch.Groups["Minute"].Value)
+                var yearInt = int.Parse(theMatch.Groups["Year"].Value);
+                var minuteInt = theMatch.Groups["Minute"].Value != string.Empty
+                    ? int.Parse(theMatch.Groups["Minute"].Value)
                     : 0;
-                var hourInt = theMatch.Groups["Hour"].Value != String.Empty
-                    ? Int32.Parse(theMatch.Groups["Hour"].Value)
+                var hourInt = theMatch.Groups["Hour"].Value != string.Empty
+                    ? int.Parse(theMatch.Groups["Hour"].Value)
                     : 0;
-                var moonInt = theMatch.Groups["Moon"].Value != String.Empty
-                    ? Int32.Parse(theMatch.Groups["Moon"].Value)
+                var moonInt = theMatch.Groups["Moon"].Value != string.Empty
+                    ? int.Parse(theMatch.Groups["Moon"].Value)
                     : 1;
-                var sunInt = theMatch.Groups["Sun"].Value != String.Empty
-                    ? Int32.Parse(theMatch.Groups["Sun"].Value)
+                var sunInt = theMatch.Groups["Sun"].Value != string.Empty
+                    ? int.Parse(theMatch.Groups["Sun"].Value)
                     : 1;
 
                 if (hourInt < 0 || hourInt > 12 || (hourInt == 12 && theMatch.Groups["TimeMeridian"].Value == "am"))

@@ -21,7 +21,6 @@
  */
 
 using System;
-using System.Threading;
 
 namespace Hybrasyl
 {
@@ -35,7 +34,7 @@ namespace Hybrasyl
             Logger.InfoFormat("LobbyConstructor: port is {0}", port);
 
             PacketHandlers = new LobbyPacketHandler[256];
-            for (int i = 0; i < 256; ++i)
+            for (var i = 0; i < 256; ++i)
                 PacketHandlers[i] = (c, p) => Logger.WarnFormat("Lobby: Unhandled opcode 0x{0:X2}", p.Opcode);
             PacketHandlers[0x00] = PacketHandler_0x00_ClientVersion;
             PacketHandlers[0x57] = PacketHandler_0x57_ServerTable;

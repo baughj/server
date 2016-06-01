@@ -255,10 +255,7 @@ namespace Hybrasyl
             TransmitDelay = 0;
         }
 
-        public int Position
-        {
-            get { return _position; }
-        }
+        public int Position => _position;
 
         public abstract EncryptMethod EncryptMethod
         {
@@ -321,11 +318,11 @@ namespace Hybrasyl
 
         public object Clone()
         {
-            MemoryStream ms = new MemoryStream();
-            BinaryFormatter bf = new BinaryFormatter();
+            var ms = new MemoryStream();
+            var bf = new BinaryFormatter();
             bf.Serialize(ms, this);
             ms.Position = 0;
-            object obj = bf.Deserialize(ms);
+            var obj = bf.Deserialize(ms);
             ms.Close();
             return obj;
         }
@@ -613,27 +610,27 @@ namespace Hybrasyl
         public void EncryptDialog()
         {
             var length = Data[2] << 8 | Data[3];
-            byte xPrime = (byte)(Data[0] - 0x2D);
-            byte x = (byte)(Data[1] ^ xPrime);
-            byte y = (byte)(x + 0x72);
-            byte z = (byte)(x + 0x28);
+            var xPrime = (byte)(Data[0] - 0x2D);
+            var x = (byte)(Data[1] ^ xPrime);
+            var y = (byte)(x + 0x72);
+            var z = (byte)(x + 0x28);
             Data[2] ^= y;
             Data[3] ^= (byte)((y + 1) % 256);
-            for (int i = 0; i < length; i++)
+            for (var i = 0; i < length; i++)
             {
                 Data[4 + i] ^= (byte)((z + i) % 256);
             }
         }
         public void DecryptDialog()
         {
-            byte xPrime = (byte)(Data[0] - 0x2D);
-            byte x = (byte)(Data[1] ^ xPrime);
-            byte y = (byte)(x + 0x72);
-            byte z = (byte)(x + 0x28);
+            var xPrime = (byte)(Data[0] - 0x2D);
+            var x = (byte)(Data[1] ^ xPrime);
+            var y = (byte)(x + 0x72);
+            var z = (byte)(x + 0x28);
             Data[2] ^= y;
             Data[3] ^= (byte)((y + 1) % 256);
             var length = Data[2] << 8 | Data[3];
-            for (int i = 0; i < length; i++)
+            for (var i = 0; i < length; i++)
             {
                 Data[4 + i] ^= (byte)((z + i) % 256);
             }
@@ -863,7 +860,7 @@ namespace Hybrasyl
 
         public void GenerateFooter()
         {
-            int length = Data.Length;
+            var length = Data.Length;
 
             if (UseDefaultKey)
             {

@@ -39,10 +39,10 @@ namespace Hybrasyl.Objects
     [JsonObject]
     public class LegendMark
     {
-        public String Prefix { get; set; }
+        public string Prefix { get; set; }
         public LegendColor Color { get; set; }
         public LegendIcon Icon { get; set; }
-        public String Text { get; set; }
+        public string Text { get; set; }
         public bool Public { get; set; }
         public DateTime Created { get; set; }
         public int Quantity { get; set; }
@@ -89,9 +89,9 @@ namespace Hybrasyl.Objects
     [JsonObject]
     public class GuildMembership
     {
-        public String Title { get; set; }
-        public String Name { get; set; }
-        public String Rank { get; set; }
+        public string Title { get; set; }
+        public string Name { get; set; }
+        public string Rank { get; set; }
     }
 
     [JsonObject]
@@ -107,9 +107,9 @@ namespace Hybrasyl.Objects
     [JsonObject]
     public class PasswordInfo
     {
-        public String Hash { get; set; }
+        public string Hash { get; set; }
         public DateTime LastChanged { get; set; }
-        public String LastChangedFrom { get; set; }
+        public string LastChangedFrom { get; set; }
     }
 
     [JsonObject]
@@ -118,7 +118,7 @@ namespace Hybrasyl.Objects
         public DateTime LastLogin { get; set; }
         public DateTime LastLogoff { get; set; }
         public DateTime LastLoginFailure { get; set; }
-        public String LastLoginFrom { get; set; }
+        public string LastLoginFrom { get; set; }
         public Int64 LoginFailureCount { get; set; }
         public DateTime CreatedTime { get; set; }
     }
@@ -196,41 +196,24 @@ namespace Hybrasyl.Objects
         [JsonProperty]
         private string Citizenship { get; set; }
 
-        public string NationName
-        {
-            get
-            {
-                return Nation != null ? Nation.Name : string.Empty;
-            }
-        } 
+        public string NationName => Nation != null ? Nation.Name : string.Empty;
+
         [JsonProperty]
         public List<LegendMark> Legend { get; set; }
 
         public DialogState DialogState { get; set; }
 
         [JsonProperty]
-        private Dictionary<String, String> UserFlags { get; set; }
-        private Dictionary<String, String> UserSessionFlags { get; set; }
+        private Dictionary<string, string> UserFlags { get; set; }
+        private Dictionary<string, string> UserSessionFlags { get; set; }
         
         public Exchange ActiveExchange { get; set; }
         public PlayerStatus Status { get; set; }
 
-        public bool IsAvailableForExchange
-        {
-            get { return Status == PlayerStatus.Alive; }
-        }
+        public bool IsAvailableForExchange => Status == PlayerStatus.Alive;
 
-        public uint ExpToLevel
-        {
-            get
-            {
-                if (Level == 99)
-                    return 0;
-                else
-                    return (uint) (Math.Pow(Level, 3) * 250 - Experience);
-            }
-        }
-
+        public uint ExpToLevel => Level == 99 ? 0 : (uint)(Math.Pow(Level, 3) * 250 - Experience);
+    
         [JsonProperty]
         public uint LevelPoints = 0;
 
@@ -238,35 +221,18 @@ namespace Hybrasyl.Objects
 
         public void SetCitizenship()
         {
-            if (Citizenship != null)
-            {
-                Nation theNation;
-                Nation = World.Nations.TryGetValue(Citizenship, out theNation) ? theNation : World.DefaultNation;
-            }
+            if (Citizenship == null) return;
+            Nation theNation;
+            Nation = World.Nations.TryGetValue(Citizenship, out theNation) ? theNation : World.DefaultNation;
         }
 
-        public bool IsPrivileged
-        {
-            get
-            {
-                if (Game.Config.Access.Privileged != null)
-                {
-                    return IsExempt || Flags.ContainsKey("gamemaster") || Game.Config.Access.Privileged.Contains(Name);
-                }
-                return IsExempt || Flags.ContainsKey("gamemaster");
-            }
-        }
+        public bool IsPrivileged => Game.Config.Access.Privileged != null
+            ? IsExempt || Flags.ContainsKey("gamemaster") || Game.Config.Access.Privileged.Contains(Name)
+            : IsExempt || Flags.ContainsKey("gamemaster");
 
-        public bool IsExempt
-        {
-            get
-            {
-                // This is hax, obvs, and so can you
-                return Name == "Kedian"; // ||(Account != null && Account.email == "baughj@discordians.net");
-            }
-        }
+        public bool IsExempt => Name == "Kedian";
 
-        public double SinceLastLogin
+        public double SinceLastLogin 
         {
             get
             {
@@ -292,12 +258,9 @@ namespace Hybrasyl.Objects
 
         public DateTime LastAttack { get; set; }
 
-        public bool Grouped
-        {
-            get { return Group != null; }
-        }
+        public bool Grouped => Group != null;
 
-    	[JsonProperty]
+        [JsonProperty]
         public bool IsMuted { get; set; }
         [JsonProperty]
         public bool IsIgnoringWhispers { get; set; }
@@ -338,9 +301,7 @@ namespace Hybrasyl.Objects
             get
             {
                 // This also eventually needs to consider marriages
-                if (Grouping)
-                    return "Grouped!";
-                return "Adventuring Alone";
+                return Grouping ? "Grouped!" : "Adventuring Alone";
             }
         }
 
@@ -350,27 +311,18 @@ namespace Hybrasyl.Objects
          * values will appear as zero as the client expects).
          */
 
-        public ushort VisibleWeight
-        {
-            get { return (ushort) Math.Max(0, CurrentWeight); }
-        }
+        public ushort VisibleWeight => (ushort) Math.Max(0, CurrentWeight);
 
         /**
          * Returns the true weight of the user's inventory + equipment, which could be negative.
          * Note that you should use VisibleWeight when communicating with the client since negative
          * weights should be invisible to users.
          */
-        public int CurrentWeight
-        {
-            get { return (Inventory.Weight + Equipment.Weight); }
-        }
+        public int CurrentWeight => (Inventory.Weight + Equipment.Weight);
 
-        public ushort MaximumWeight
-        {
-            get { return (ushort) (BaseStr + Level/4 + 48); }
-        }
+        public ushort MaximumWeight => (ushort) (BaseStr + Level/4 + 48);
 
-        public bool VerifyPassword(String password)
+        public bool VerifyPassword(string password)
         {
              return BCrypt.Net.BCrypt.Verify(password, Password.Hash);
         }
@@ -392,14 +344,14 @@ namespace Hybrasyl.Objects
             Location = new Location();
             Legend = new List<LegendMark>();
             Guild = new GuildMembership();
-            LastSaid = String.Empty;
+            LastSaid = string.Empty;
             LastSpoke = 0;
             NumSaidRepeated = 0;
             PortraitData = new byte[0];
             ProfileText = string.Empty;
             DialogState = new DialogState(this);
-            UserFlags = new Dictionary<String, String>();
-            UserSessionFlags = new Dictionary<String, String>();
+            UserFlags = new Dictionary<string, string>();
+            UserSessionFlags = new Dictionary<string, string>();
             Status = PlayerStatus.Alive;
             Group = null;
             Flags = new Dictionary<string, bool>();
@@ -453,11 +405,11 @@ namespace Hybrasyl.Objects
                 // Apply one Level at a time
 
                 var levelsGained = 0;
-                Random random = new Random();
+                var random = new Random();
 
                 while (exp > 0)
                 {
-                    uint expChunk = Math.Min(exp, ExpToLevel);
+                    var expChunk = Math.Min(exp, ExpToLevel);
 
                     exp -= expChunk;
                     Experience += expChunk;
@@ -470,10 +422,10 @@ namespace Hybrasyl.Objects
 
                         #region Add Hp and Mp for each level gained
 
-                        int hpGain = 0;
-                        int mpGain = 0;
-                        int bonusHp = 0;
-                        int bonusMp = 0;
+                        var hpGain = 0;
+                        var mpGain = 0;
+                        var bonusHp = 0;
+                        var bonusMp = 0;
                         
                         double levelCircleModifier;  // Users get more Hp and Mp per level at higher Level "circles"
 
@@ -548,8 +500,8 @@ namespace Hybrasyl.Objects
                         // - 50% Level circle
                         // - 50% Randomness
                         
-                        int bonusHpGain = (int)Math.Round(bonusHp * 0.5 * levelCircleModifier + bonusHp * 0.5 * random.NextDouble(), MidpointRounding.AwayFromZero);
-                        int bonusMpGain = (int)Math.Round(bonusMp * 0.5 * levelCircleModifier + bonusMp * 0.5 * random.NextDouble(), MidpointRounding.AwayFromZero);
+                        var bonusHpGain = (int)Math.Round(bonusHp * 0.5 * levelCircleModifier + bonusHp * 0.5 * random.NextDouble(), MidpointRounding.AwayFromZero);
+                        var bonusMpGain = (int)Math.Round(bonusMp * 0.5 * levelCircleModifier + bonusMp * 0.5 * random.NextDouble(), MidpointRounding.AwayFromZero);
 
                         BaseHp += (hpGain + bonusHpGain);
                         BaseMp += (mpGain + bonusMpGain);
@@ -661,19 +613,12 @@ namespace Hybrasyl.Objects
         public bool CheckSquelch(byte opcode, object obj)
         {
             ThrottleInfo tinfo;
-            if (Client.Throttle.TryGetValue(opcode, out tinfo))
-            {
-                if (tinfo.IsSquelched(obj))
-                {
-                    if (tinfo.SquelchCount > tinfo.Throttle.DisconnectAfter)
-                    {
-                        Logger.WarnFormat("cid {0}: reached squelch count for {1}: disconnected", Client.ConnectionId, opcode);
-                        Client.Disconnect();
-                    }
-                    return true;
-                }
-            }
-            return false;
+            if (!Client.Throttle.TryGetValue(opcode, out tinfo)) return false;
+            if (!tinfo.IsSquelched(obj)) return false;
+            if (tinfo.SquelchCount <= tinfo.Throttle.DisconnectAfter) return true;
+            Logger.WarnFormat("cid {0}: reached squelch count for {1}: disconnected", Client.ConnectionId, opcode);
+            Client.Disconnect();
+            return true;
         }
         
         /// <summary>
@@ -774,23 +719,21 @@ namespace Hybrasyl.Objects
 
         public void Save()
         {
-            if (!IsSaving)
+            if (IsSaving) return;
+            IsSaving = true;
+            // Save location
+            if (IsAtWorldMap)
+                Location.WorldMap = true;
+            else if (Map != null)
             {
-                IsSaving = true;
-                // Save location
-                if (IsAtWorldMap)
-                    Location.WorldMap = true;
-                else if (Map != null)
-                {
-                    Location.MapId = Map.Id;
-                    Location.X = X;
-                    Location.Y = Y;
-                }
-
-                var cache = World.DatastoreConnection.GetDatabase();
-                cache.Set(GetStorageKey(Name), JsonConvert.SerializeObject(this, new JsonSerializerSettings() { PreserveReferencesHandling = PreserveReferencesHandling.All }));
-                IsSaving = false;
+                Location.MapId = Map.Id;
+                Location.X = X;
+                Location.Y = Y;
             }
+
+            var cache = World.DatastoreConnection.GetDatabase();
+            cache.Set(GetStorageKey(Name), JsonConvert.SerializeObject(this, new JsonSerializerSettings() { PreserveReferencesHandling = PreserveReferencesHandling.All }));
+            IsSaving = false;
         }
 
         public override void SendMapInfo()
@@ -824,20 +767,20 @@ namespace Hybrasyl.Objects
         }
 
 
-        public void DisplayIncomingWhisper(String charname, String message)
+        public void DisplayIncomingWhisper(string charname, string message)
         {
-            Client.SendMessage(String.Format("{0}\" {1}", charname, message), 0x0);
+            Client.SendMessage($"{charname}\" {message}", 0x0);
         }
 
-        public void DisplayOutgoingWhisper(String charname, String message)
+        public void DisplayOutgoingWhisper(string charname, string message)
         {
-            Client.SendMessage(String.Format("{0}> {1}", charname, message), 0x0);
+            Client.SendMessage($"{charname}> {message}", 0x0);
         }
 
-        public void SendWhisper(String charname, String message)
+        public void SendWhisper(string charname, string message)
         {
             var target = World.FindUser(charname);
-            string err = String.Empty;
+            var err = string.Empty;
 
             if (CanTalkTo(target, out err))
             {
@@ -863,12 +806,12 @@ namespace Hybrasyl.Objects
             }
             else
             {
-                string err = String.Empty;
+                var err = string.Empty;
                 foreach (var member in Group.Members)
                 {
                     if (CanTalkTo(member, out err))
                     {
-                        member.Client.SendMessage(String.Format("[!{0}] {1}", Name, message), MessageTypes.GROUP);
+                        member.Client.SendMessage($"[!{Name}] {message}", MessageTypes.GROUP);
                     }
                     else
                     {
@@ -899,7 +842,7 @@ namespace Hybrasyl.Objects
                 return false;
             }
 
-            msg = String.Empty;
+            msg = string.Empty;
             return true;
         }
 
@@ -939,7 +882,7 @@ namespace Hybrasyl.Objects
             if(castable.Effects.Damage != null)
             {
                 //byte radius = castable.Intents.Intent.Where(x => x.;
-                Direction playerFacing = this.Direction;
+                var playerFacing = this.Direction;
                 byte maxTargets = 0;
                 //this is an attack skill
                 
@@ -984,7 +927,7 @@ namespace Hybrasyl.Objects
             // <acc2 color> <acc2> <acc3 color> <acc3> <nfi> <nfi> <overcoat> <overcoat color> <skin color> <transparency>
             // <face> <name style (see Enums.NameStyles)> <name length> <name> <group name length> <group name> (shows up as hovering clickable bar)
             var x33 = new ServerPacket(0x33);
-            byte offset = (byte)(Equipment.Armor != null ? Equipment.Armor.BodyStyle : 0);
+            var offset = (byte)(Equipment.Armor != null ? Equipment.Armor.BodyStyle : 0);
 
 
             x33.WriteUInt16(X);
@@ -993,30 +936,30 @@ namespace Hybrasyl.Objects
             x33.WriteUInt32(Id);
 
             // hacky until we rewrite it correctly
-            var helmat = (Equipment.Helmet != null ? Equipment.Helmet.DisplaySprite : HairStyle);
-            helmat = (Equipment.DisplayHelm != null ? Equipment.DisplayHelm.DisplaySprite : helmat);
+            var helmat = Equipment.Helmet?.DisplaySprite ?? HairStyle;
+            helmat = Equipment.DisplayHelm?.DisplaySprite ?? helmat;
 
             x33.WriteUInt16((ushort)helmat);
 
             // shit like this is really pissing me off
             x33.WriteByte((byte)(((byte)Sex * 16) + offset));
 
-            x33.WriteUInt16((ushort)(Equipment.Armor != null ? Equipment.Armor.DisplaySprite : 0));
-            x33.WriteByte((byte)(Equipment.Boots != null ? Equipment.Boots.DisplaySprite : 0));
-            x33.WriteUInt16((ushort)(Equipment.Armor != null ? Equipment.Armor.DisplaySprite : 0));
-            x33.WriteByte((byte)(Equipment.Shield != null ? Equipment.Shield.DisplaySprite : 0));
-            x33.WriteUInt16((ushort)(Equipment.Weapon != null ? Equipment.Weapon.DisplaySprite : 0));
+            x33.WriteUInt16((ushort)(Equipment.Armor?.DisplaySprite ?? 0));
+            x33.WriteByte((byte)(Equipment.Boots?.DisplaySprite ?? 0));
+            x33.WriteUInt16((ushort)(Equipment.Armor?.DisplaySprite ?? 0));
+            x33.WriteByte((byte)(Equipment.Shield?.DisplaySprite ?? 0));
+            x33.WriteUInt16((ushort)(Equipment.Weapon?.DisplaySprite ?? 0));
             x33.WriteByte(HairColor);
-            x33.WriteByte((byte)(Equipment.Boots != null ? Equipment.Boots.Color : 0));
+            x33.WriteByte((byte)(Equipment.Boots?.Color ?? 0));
             x33.WriteByte(0x00); // accessory 1 color
-            x33.WriteUInt16((ushort)(Equipment.FirstAcc != null ? Equipment.FirstAcc.DisplaySprite : 0)); // accessory 1
+            x33.WriteUInt16((ushort)(Equipment.FirstAcc?.DisplaySprite ?? 0)); // accessory 1
             x33.WriteByte(0x00); // accessory 2 color
-            x33.WriteUInt16((ushort)(Equipment.SecondAcc != null ? Equipment.SecondAcc.DisplaySprite : 0)); // accessory 2
+            x33.WriteUInt16((ushort)(Equipment.SecondAcc?.DisplaySprite ?? 0)); // accessory 2
             x33.WriteByte(0x00); // accessory 3 color
-            x33.WriteUInt16((ushort)(Equipment.ThirdAcc != null ? Equipment.ThirdAcc.DisplaySprite : 0)); // accessory 3
+            x33.WriteUInt16((ushort)(Equipment.ThirdAcc?.DisplaySprite ?? 0)); // accessory 3
             x33.WriteByte(0x00); // lantern size
             x33.WriteByte(0x00); // rest position
-            x33.WriteUInt16((ushort)(Equipment.Overcoat != null ? Equipment.Overcoat.DisplaySprite : 0)); // overcoat
+            x33.WriteUInt16((ushort)(Equipment.Overcoat?.DisplaySprite ?? 0)); // overcoat
             x33.WriteByte(0x00); // overcoat color
             x33.WriteByte(0x00); // skin color
             x33.WriteByte(0x00); // semi-trans
@@ -1129,7 +1072,7 @@ namespace Hybrasyl.Objects
                 SendClearSkill(slot);
                 return;
             }
-            Logger.DebugFormat("Adding skill {0} to slot {2}",
+            Logger.DebugFormat("Adding skill {0} to slot {1}",
                 item.Name, slot);
             var x2C = new ServerPacket(0x2C);
             x2C.WriteByte((byte)slot);
@@ -1148,7 +1091,7 @@ namespace Hybrasyl.Objects
                 SendClearSkill(slot);
                 return;
             }
-            Logger.DebugFormat("Adding spell {0} to slot {2}",
+            Logger.DebugFormat("Adding spell {0} to slot {1}",
                 item.Name, slot);
             var x17 = new ServerPacket(0x17);
             x17.WriteByte((byte)slot);
@@ -1163,35 +1106,35 @@ namespace Hybrasyl.Objects
 
         }
 
-        public void SetFlag(String flag, String value)
+        public void SetFlag(string flag, string value)
         {
             UserFlags[flag] = value;
         }
 
-        public void SetSessionFlag(String flag, String value)
+        public void SetSessionFlag(string flag, string value)
         {
             UserSessionFlags[flag] = value;
         }
 
-        public String GetFlag(String flag)
+        public string GetFlag(string flag)
         {
-            String value;
+            string value;
             if (UserFlags.TryGetValue(flag, out value))
             {
                 return value;
             }
-            return String.Empty;
+            return string.Empty;
         }
 
 
-        public String GetSessionFlag(String flag)
+        public string GetSessionFlag(string flag)
         {
-            String value;
+            string value;
             if (UserSessionFlags.TryGetValue(flag, out value))
             {
                 return value;
             }
-            return String.Empty;
+            return string.Empty;
         }
 
         public override void UpdateAttributes(StatUpdateFlags flags)
@@ -1270,9 +1213,9 @@ namespace Hybrasyl.Objects
         public override bool Walk(Direction direction)
         {
             int oldX = X, oldY = Y, newX = X, newY = Y;
-            Rectangle arrivingViewport = Rectangle.Empty;
-            Rectangle departingViewport = Rectangle.Empty;
-            Rectangle commonViewport = Rectangle.Empty;
+            var arrivingViewport = Rectangle.Empty;
+            var departingViewport = Rectangle.Empty;
+            var commonViewport = Rectangle.Empty;
             var halfViewport = Constants.VIEWPORT_SIZE / 2;
             Warp targetWarp;
 
@@ -1316,34 +1259,33 @@ namespace Hybrasyl.Objects
                 Refresh();
                 return false;
             }
-            else
+
+            // Is the player trying to walk into an occupied tile?
+            foreach (var obj in Map.GetTileContents((byte)newX, (byte)newY))
             {
-                // Is the player trying to walk into an occupied tile?
-                foreach (var obj in Map.GetTileContents((byte)newX, (byte)newY))
+                Logger.DebugFormat("Collsion check: found obj {0}", obj.Name);
+                if (obj is Creature)
                 {
-                    Logger.DebugFormat("Collsion check: found obj {0}", obj.Name);
-                    if (obj is Creature)
-                    {
-                        Logger.DebugFormat("Walking prohibited: found {0}", obj.Name);
-                        Refresh();
-                        return false;
-                    }
+                    Logger.DebugFormat("Walking prohibited: found {0}", obj.Name);
+                    Refresh();
+                    return false;
                 }
-                // Is this user entering a forbidden (by level or otherwise) warp?
-                if (isWarp)
+            }
+
+            // Is this user entering a forbidden (by level or otherwise) warp?
+            if (isWarp)
+            {
+                if (targetWarp.MinimumLevel > Level)
                 {
-                    if (targetWarp.MinimumLevel > Level)
-                    {
-                        Client.SendMessage("You're too afraid to even approach it!", 3);
-                        Refresh();
-                        return false;
-                    }
-                    else if (targetWarp.MaximumLevel < Level)
-                    {
-                        Client.SendMessage("Your honor forbids you from entering.", 3);
-                        Refresh();
-                        return false;
-                    }
+                    Client.SendMessage("You're too afraid to even approach it!", 3);
+                    Refresh();
+                    return false;
+                }
+                else if (targetWarp.MaximumLevel < Level)
+                {
+                    Client.SendMessage("Your honor forbids you from entering.", 3);
+                    Refresh();
+                    return false;
                 }
             }
 
@@ -1380,21 +1322,16 @@ namespace Hybrasyl.Objects
             // Objects in the arriving viewport receive a "show to" (0x33) packet
             // Objects in the departing viewport receive a "remove object" (0x0E) packet
 
-            foreach (var obj in Map.EntityTree.GetObjects(commonViewport))
+            foreach (var user in from obj in Map.EntityTree.GetObjects(commonViewport) where obj != this && obj is User select obj as User)
             {
-                if (obj != this && obj is User)
-                {
-
-                    var user = obj as User;
-                    Logger.DebugFormat("Sending walk packet for {0} to {1}", Name, user.Name);
-                    var x0C = new ServerPacket(0x0C);
-                    x0C.WriteUInt32(Id);
-                    x0C.WriteUInt16((byte)oldX);
-                    x0C.WriteUInt16((byte)oldY);
-                    x0C.WriteByte((byte)direction);
-                    x0C.WriteByte(0x00);
-                    user.Enqueue(x0C);
-                }
+                Logger.DebugFormat("Sending walk packet for {0} to {1}", Name, user.Name);
+                var x0C = new ServerPacket(0x0C);
+                x0C.WriteUInt32(Id);
+                x0C.WriteUInt16((byte)oldX);
+                x0C.WriteUInt16((byte)oldY);
+                x0C.WriteByte((byte)direction);
+                x0C.WriteByte(0x00);
+                user.Enqueue(x0C);
             }
 
             foreach (var obj in Map.EntityTree.GetObjects(arrivingViewport))
@@ -1461,12 +1398,9 @@ namespace Hybrasyl.Objects
 
         public bool AddSkill(Castable castable)
         {
-            if (SkillBook.IsFull)
-            {
-                SendSystemMessage("You cannot learn any more skills.");
-                return false;
-            }
-            return AddSkill(castable, SkillBook.FindEmptySlot());
+            if (!SkillBook.IsFull) return AddSkill(castable, SkillBook.FindEmptySlot());
+            SendSystemMessage("You cannot learn any more skills.");
+            return false;
         }
 
         public bool AddSkill(Castable item, byte slot)
@@ -1495,12 +1429,9 @@ namespace Hybrasyl.Objects
 
         public bool AddSpell(Castable castable)
         {
-            if (SpellBook.IsFull)
-            {
-                SendSystemMessage("You cannot learn any more spells.");
-                return false;
-            }
-            return AddSkill(castable, SkillBook.FindEmptySlot());
+            if (!SpellBook.IsFull) return AddSkill(castable, SkillBook.FindEmptySlot());
+            SendSystemMessage("You cannot learn any more spells.");
+            return false;
         }
 
         public bool AddSpell(Castable item, byte slot)
@@ -1529,13 +1460,10 @@ namespace Hybrasyl.Objects
 
         public bool AddItem(Item item, bool updateWeight = true)
         {
-            if (Inventory.IsFull)
-            {
-                SendSystemMessage("You cannot carry any more items.");
-                Map.Insert(item, X, Y);
-                return false;
-            }
-            return AddItem(item, Inventory.FindEmptySlot(), updateWeight);
+            if (!Inventory.IsFull) return AddItem(item, Inventory.FindEmptySlot(), updateWeight);
+            SendSystemMessage("You cannot carry any more items.");
+            Map.Insert(item, X, Y);
+            return false;
         }
 
         public bool AddItem(Item item, byte slot, bool updateWeight = true)
@@ -1560,7 +1488,7 @@ namespace Hybrasyl.Objects
                 {
                     item.Count = (inventoryItem.Count + item.Count) - inventoryItem.MaximumStack;
                     inventoryItem.Count = inventoryItem.MaximumStack;
-                    SendSystemMessage(String.Format("You can't carry any more {0}", item.Name));
+                    SendSystemMessage($"You can't carry any more {item.Name}");
                     Map.Insert(item, X, Y);
                     return false;
                 }
@@ -1590,33 +1518,23 @@ namespace Hybrasyl.Objects
 
         public bool RemoveItem(byte slot, bool updateWeight = true)
         {
-            if (Inventory.Remove(slot))
-            {
-                SendClearItem(slot);
-                if (updateWeight) UpdateAttributes(StatUpdateFlags.Primary);
-                return true;
-            }
-
-            return false;
+            if (!Inventory.Remove(slot)) return false;
+            SendClearItem(slot);
+            if (updateWeight) UpdateAttributes(StatUpdateFlags.Primary);
+            return true;
         }
 
         public bool IncreaseItem(byte slot, int quantity)
         {
-            if (Inventory.Increase(slot, quantity))
-            {
-                SendItemUpdate(Inventory[slot], slot);
-                return true;
-            }
-            return false;
+            if (!Inventory.Increase(slot, quantity)) return false;
+            SendItemUpdate(Inventory[slot], slot);
+            return true;
         }
         public bool DecreaseItem(byte slot, int quantity)
         {
-            if (Inventory.Decrease(slot, quantity))
-            {
-                SendItemUpdate(Inventory[slot], slot);
-                return true;
-            }
-            return false;
+            if (!Inventory.Decrease(slot, quantity)) return false;
+            SendItemUpdate(Inventory[slot], slot);
+            return true;
         }
 
         public bool AddEquipment(Item item, byte slot, bool sendUpdate = true)
@@ -1630,7 +1548,7 @@ namespace Hybrasyl.Objects
             }
 
             SendEquipItem(item, slot);
-            Client.SendMessage(string.Format("Equipped {0}", item.Name), 3);
+            Client.SendMessage($"Equipped {item.Name}", 3);
             ApplyBonuses(item);
             UpdateAttributes(StatUpdateFlags.Stats);
             if (sendUpdate) Show();
@@ -1640,16 +1558,13 @@ namespace Hybrasyl.Objects
         public bool RemoveEquipment(byte slot, bool sendUpdate = true)
         {
             var item = Equipment[slot];
-            if (Equipment.Remove(slot))
-            {
-                SendRefreshEquipmentSlot(slot);
-                Client.SendMessage(string.Format("Unequipped {0}", item.Name), 3);
-                RemoveBonuses(item);
-                UpdateAttributes(StatUpdateFlags.Stats);
-                if (sendUpdate) Show();
-                return true;
-            }
-            return false;
+            if (!Equipment.Remove(slot)) return false;
+            SendRefreshEquipmentSlot(slot);
+            Client.SendMessage($"Unequipped {item.Name}", 3);
+            RemoveBonuses(item);
+            UpdateAttributes(StatUpdateFlags.Stats);
+            if (sendUpdate) Show();
+            return true;
         }
 
         public void SendRefreshEquipmentSlot(int slot)
@@ -1687,7 +1602,7 @@ namespace Hybrasyl.Objects
             {
                 var damage = castObject.Effects.Damage;
 
-                Random rand = new Random();
+                var rand = new Random();
 
                 if (damage.Formula == null) //will need to be expanded. also will need to account for damage scripts
                 {
@@ -1703,7 +1618,7 @@ namespace Hybrasyl.Objects
                     var formula = damage.Formula;
                     var damageType = EnumUtil.ParseEnum<Enums.DamageType>(damage.Type.ToString(),
                         Enums.DamageType.Magical);
-                    FormulaParser parser = new FormulaParser(this, castObject, target);
+                    var parser = new FormulaParser(this, castObject, target);
                     var dmg = parser.Eval(formula);
                     if (dmg == 0) dmg = 1;
                     target.Damage(dmg, OffensiveElement, damageType, this);
@@ -1736,7 +1651,7 @@ namespace Hybrasyl.Objects
                 {
                     case Direction.East:
                     {
-                        var obj = Map.EntityTree.Where(x => x.X == X + 1 && x.Y == Y).FirstOrDefault();
+                        var obj = Map.EntityTree.FirstOrDefault(x => x.X == X + 1 && x.Y == Y);
                         if (obj is Monster) target = (Monster) obj;
                         if (obj is User)
                         {
@@ -1747,19 +1662,19 @@ namespace Hybrasyl.Objects
                         break;
                     case Direction.West:
                     {
-                        var obj = Map.EntityTree.Where(x => x.X == X - 1 && x.Y == Y).FirstOrDefault();
+                        var obj = Map.EntityTree.FirstOrDefault(x => x.X == X - 1 && x.Y == Y);
                         if (obj is Monster) target = (Monster) obj;
                     }
                         break;
                     case Direction.North:
                     {
-                        var obj = Map.EntityTree.Where(x => x.X == X && x.Y == Y - 1).FirstOrDefault();
+                        var obj = Map.EntityTree.FirstOrDefault(x => x.X == X && x.Y == Y - 1);
                         if (obj is Monster) target = (Monster) obj;
                     }
                         break;
                     case Direction.South:
                     {
-                        var obj = Map.EntityTree.Where(x => x.X == X && x.Y == Y + 1).FirstOrDefault();
+                        var obj = Map.EntityTree.FirstOrDefault(x => x.X == X && x.Y == Y + 1);
                         if (obj is Monster) target = (Monster) obj;
                     }
                         break;
@@ -1769,13 +1684,10 @@ namespace Hybrasyl.Objects
                 //try to get the creature we're facing and set it as the target.
             }
 
-            foreach (Castable c in SkillBook)
+            // TODO: Isassail should be isAssail and also a boolean
+            foreach (var c in SkillBook.Where(c => c.Isassail == "true"))
             {
-                if (c.Isassail == "true")
-                    //i do not like that this is a string. I'll probablt update it at some point to return a simple type of boolean.
-                {
-                    Attack(direction, c, target);
-                }
+                Attack(direction, c, target);
             }
             //animation handled here as to not repeatedly send assails.
             //this.LastAttack = DateTime.Now;
@@ -1790,31 +1702,29 @@ namespace Hybrasyl.Objects
 
         private string GroupProfileSegment()
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
             // Only build this string if the user's in a group. Otherwise an empty
             // string should be sent.
-            if (Grouped)
+            if (!Grouped) return sb.ToString();
+            sb.Append("Group members");
+            sb.Append((char)0x0A);
+
+            // The user's name should go first, and should not have an asterisk.
+            // In practice this will mean that the user's name appears first and
+            // is grayed out, while all other names are white.
+            sb.Append("  " + Name);
+            sb.Append((char)0x0A);
+
+            foreach (var member in Group.Members)
             {
-                sb.Append("Group members");
-                sb.Append((char)0x0A);
-
-                // The user's name should go first, and should not have an asterisk.
-                // In practice this will mean that the user's name appears first and
-                // is grayed out, while all other names are white.
-                sb.Append("  " + Name);
-                sb.Append((char)0x0A);
-
-                foreach (var member in Group.Members)
+                if (member.Name != Name)
                 {
-                    if (member.Name != Name)
-                    {
-                        sb.Append("  " + member.Name);
-                        sb.Append((char)0x0A);
-                    }
+                    sb.Append("  " + member.Name);
+                    sb.Append((char)0x0A);
                 }
-                sb.Append(String.Format("Total {0}", Group.Members.Count));
             }
+            sb.Append($"Total {Group.Members.Count}");
 
             return sb.ToString();
         }
@@ -1998,7 +1908,7 @@ namespace Hybrasyl.Objects
             x2F.WriteByte(0x00); // color
             x2F.WriteByte(0x00); // ??
             x2F.WriteString8(merchant.Name);
-            x2F.WriteString16(string.Format("How many {0} would you like to buy?", name));
+            x2F.WriteString16($"How many {name} would you like to buy?");
             x2F.WriteString8(name);
             x2F.WriteUInt16((ushort)MerchantMenuItem.BuyItemQuantity);
             Enqueue(x2F);
@@ -2022,9 +1932,9 @@ namespace Hybrasyl.Objects
             x2F.WriteString16("What would you like to sell?");
             x2F.WriteUInt16((ushort)MerchantMenuItem.SellItem);
 
-            int position = x2F.Position;
+            var position = x2F.Position;
             x2F.WriteByte(0);
-            int count = 0;
+            var count = 0;
 
             for (byte i = 1; i <= Inventory.Size; ++i)
             {
@@ -2063,7 +1973,7 @@ namespace Hybrasyl.Objects
         public void ShowSellConfirm(Merchant merchant, byte slot, int quantity)
         {
             var item = Inventory[slot];
-            double offer = Math.Round(item.Value * 0.50) * quantity;
+            var offer = Math.Round(item.Value * 0.50) * quantity;
 
             var x2F = new ServerPacket(0x2F);
             x2F.WriteByte(0x01); // type!
@@ -2077,7 +1987,7 @@ namespace Hybrasyl.Objects
             x2F.WriteByte(0x00); // color
             x2F.WriteByte(0x00); // ??
             x2F.WriteString8(merchant.Name);
-            x2F.WriteString16(string.Format("I'll give you {0} gold for {1}.", offer, quantity == 1 ? "that" : "those"));
+            x2F.WriteString16($"I'll give you {offer} gold for {(quantity == 1 ? "that" : "those")}.");
             x2F.WriteByte(2);
             x2F.WriteByte(slot);
             x2F.WriteByte((byte)quantity);
@@ -2126,7 +2036,7 @@ namespace Hybrasyl.Objects
             // to be <67) otherwise we will cause a buffer overflow / crash on the client side
             // (For right now we assume the color code ({=c) isn't counted but that needs testing)
             // I MEAN IT TAKES 16 BIT RITE BUT HAY ARBITRARY LENGTH ON STRINGS WITH NO NULL TERMINATION IS LEET
-            var transmit = String.Format("{{=c[{0}] {1}", sender, message);
+            var transmit = $"{{=c[{sender}] {message}";
             if (transmit.Length > 67)
             {
                 // IT'S CHOPPIN TIME
@@ -2177,14 +2087,12 @@ namespace Hybrasyl.Objects
         /// <param name="requestor">The user requesting the trade</param>
         public void SendExchangeInitiation(User requestor)
         {
-            if (Status.HasFlag(PlayerStatus.InExchange) && requestor.Status.HasFlag(PlayerStatus.InExchange))
-            {
-                var x42 = new ServerPacket(0x42);
-                x42.WriteByte(0); // show exchange window
-                x42.WriteUInt32(requestor.Id);
-                x42.WriteString8(requestor.Name);
-                Enqueue(x42);
-            }            
+            if (!Status.HasFlag(PlayerStatus.InExchange) || !requestor.Status.HasFlag(PlayerStatus.InExchange)) return;
+            var x42 = new ServerPacket(0x42);
+            x42.WriteByte(0); // show exchange window
+            x42.WriteUInt32(requestor.Id);
+            x42.WriteString8(requestor.Name);
+            Enqueue(x42);
         }
 
         /// <summary>
@@ -2193,14 +2101,11 @@ namespace Hybrasyl.Objects
         /// <param name="itemSlot">The item slot containing a stacked item that will be split (client side)</param>
         public void SendExchangeQuantityPrompt(byte itemSlot)
         {
-            if (Status.HasFlag(PlayerStatus.InExchange))
-            {
-                var x42 = new ServerPacket(0x42);
-                x42.WriteByte(1); // show quantity prompt
-                x42.WriteByte(itemSlot); // Slot for which we need quantity info
-                Enqueue(x42);
-            }
-            
+            if (!Status.HasFlag(PlayerStatus.InExchange)) return;
+            var x42 = new ServerPacket(0x42);
+            x42.WriteByte(1); // show quantity prompt
+            x42.WriteByte(itemSlot); // Slot for which we need quantity info
+            Enqueue(x42);
         }
         /// <summary>
         /// Send an exchange update packet for an item to an active exchange participant.
@@ -2210,17 +2115,15 @@ namespace Hybrasyl.Objects
         /// <param name="source">Boolean indicating which "side" of the transaction will be updated (source / "left side" == true)</param>
         public void SendExchangeUpdate(Item toAdd, byte slot, bool source = true)
         {
-            if (Status.HasFlag(PlayerStatus.InExchange))
-            {
-                var x42 = new ServerPacket(0x42); // Update exchange packet
-                x42.WriteByte(2); // Show item in exchange window
-                x42.WriteByte((byte)(source ? 0 : 1)); // Update "my" side of the transaction
-                x42.WriteByte(slot); // Which "exchange slot" to update
-                x42.WriteUInt16((ushort)(0x8000 + toAdd.Sprite));
-                x42.WriteByte(toAdd.Color);
-                x42.WriteString8(toAdd.Name);
-                Enqueue(x42);
-            }
+            if (!Status.HasFlag(PlayerStatus.InExchange)) return;
+            var x42 = new ServerPacket(0x42); // Update exchange packet
+            x42.WriteByte(2); // Show item in exchange window
+            x42.WriteByte((byte)(source ? 0 : 1)); // Update "my" side of the transaction
+            x42.WriteByte(slot); // Which "exchange slot" to update
+            x42.WriteUInt16((ushort)(0x8000 + toAdd.Sprite));
+            x42.WriteByte(toAdd.Color);
+            x42.WriteString8(toAdd.Name);
+            Enqueue(x42);
         }
 
         /// <summary>
@@ -2230,14 +2133,12 @@ namespace Hybrasyl.Objects
         /// <param name="source">Boolean indicating which "side" of the transaction will be updated (source / "left side" == true)</param>
         public void SendExchangeUpdate(uint gold, bool source = true)
         {
-            if (Status.HasFlag(PlayerStatus.InExchange))
-            {
-                var x42 = new ServerPacket(0x42); // Update exchange packet
-                x42.WriteByte(3); // Update gold in exchange window
-                x42.WriteByte((byte)(source ? 0 : 1)); // Update "my" side of the transaction
-                x42.WriteUInt32(gold); // Which "exchange slot" to update
-                Enqueue(x42);
-            }
+            if (!Status.HasFlag(PlayerStatus.InExchange)) return;
+            var x42 = new ServerPacket(0x42); // Update exchange packet
+            x42.WriteByte(3); // Update gold in exchange window
+            x42.WriteByte((byte)(source ? 0 : 1)); // Update "my" side of the transaction
+            x42.WriteUInt32(gold); // Which "exchange slot" to update
+            Enqueue(x42);
         }
 
         /// <summary>
@@ -2246,14 +2147,12 @@ namespace Hybrasyl.Objects
         /// <param name="source">The "side" responsible for cancellation (source / "left side" == true)</param>
         public void SendExchangeCancellation(bool source = true)
         {
-           if (Status.HasFlag(PlayerStatus.InExchange))
-            {
-                var x42 = new ServerPacket(0x42); // Update exchange packet
-                x42.WriteByte(4); // Exchange cancelled
-                x42.WriteByte((byte)(source ? 0 : 1)); // Which "side" cancelled the transaction
-                x42.WriteString8("Exchange was cancelled.");
-                Enqueue(x42);
-           }  
+            if (!Status.HasFlag(PlayerStatus.InExchange)) return;
+            var x42 = new ServerPacket(0x42); // Update exchange packet
+            x42.WriteByte(4); // Exchange cancelled
+            x42.WriteByte((byte)(source ? 0 : 1)); // Which "side" cancelled the transaction
+            x42.WriteString8("Exchange was cancelled.");
+            Enqueue(x42);
         }
 
         /// <summary>
@@ -2263,33 +2162,29 @@ namespace Hybrasyl.Objects
 
         public void SendExchangeConfirmation(bool source = true)
         {
-            if (Status.HasFlag(PlayerStatus.InExchange))
-            {
-                var x42 = new ServerPacket(0x42); // Update exchange packet
-                x42.WriteByte(5); // Exchange confirmed
-                x42.WriteByte((byte)(source ? 0 : 1)); // Which "side" confirmed the transaction
-                x42.WriteString8("You exchanged.");
-                Enqueue(x42);
-            }
+            if (!Status.HasFlag(PlayerStatus.InExchange)) return;
+            var x42 = new ServerPacket(0x42); // Update exchange packet
+            x42.WriteByte(5); // Exchange confirmed
+            x42.WriteByte((byte)(source ? 0 : 1)); // Which "side" confirmed the transaction
+            x42.WriteString8("You exchanged.");
+            Enqueue(x42);
         }
 
         public void SendInventory()
         {
             for(byte i = 0; i<this.Inventory.Size; i++)
             {
-                if(this.Inventory[i] != null)
-                {
-                    var x0F = new ServerPacket(0x0F);
-                    x0F.WriteByte(i);
-                    x0F.WriteUInt16((ushort)(Inventory[i].Sprite + 0x8000));
-                    x0F.WriteByte(Inventory[i].Color);
-                    x0F.WriteString8(this.Inventory[i].Name);
-                    x0F.WriteInt32(this.Inventory[i].Count);
-                    x0F.WriteBoolean(this.Inventory[i].Stackable);
-                    x0F.WriteUInt32(this.Inventory[i].MaximumDurability);
-                    x0F.WriteUInt32(this.Inventory[i].Durability);
-                    Enqueue(x0F);
-                }
+                if (this.Inventory[i] == null) continue;
+                var x0F = new ServerPacket(0x0F);
+                x0F.WriteByte(i);
+                x0F.WriteUInt16((ushort)(Inventory[i].Sprite + 0x8000));
+                x0F.WriteByte(Inventory[i].Color);
+                x0F.WriteString8(this.Inventory[i].Name);
+                x0F.WriteInt32(this.Inventory[i].Count);
+                x0F.WriteBoolean(this.Inventory[i].Stackable);
+                x0F.WriteUInt32(this.Inventory[i].MaximumDurability);
+                x0F.WriteUInt32(this.Inventory[i].Durability);
+                Enqueue(x0F);
             }
         }
 
@@ -2304,35 +2199,31 @@ namespace Hybrasyl.Objects
         {
             for (byte i = 0; i < this.SkillBook.Size; i++)
             {
-                if (this.SkillBook[i] != null)
-                {
-                    var x2C = new ServerPacket(0x2C);
-                    x2C.WriteByte((byte)i);
-                    x2C.WriteUInt16((ushort)(SkillBook[i].Icon));
-                    x2C.WriteString8(SkillBook[i].Name);
-                    x2C.WriteByte(0); //current level
-                    x2C.WriteByte((byte)100); //this will need to be updated
-                    Enqueue(x2C);
-                }
+                if (this.SkillBook[i] == null) continue;
+                var x2C = new ServerPacket(0x2C);
+                x2C.WriteByte((byte)i);
+                x2C.WriteUInt16((ushort)(SkillBook[i].Icon));
+                x2C.WriteString8(SkillBook[i].Name);
+                x2C.WriteByte(0); //current level
+                x2C.WriteByte((byte)100); //this will need to be updated
+                Enqueue(x2C);
             }
         }
         public void SendSpells()
         {
             for (byte i = 0; i < this.SpellBook.Size; i++)
             {
-                if (this.SpellBook[i] != null)
-                {
-                    var x17 = new ServerPacket(0x17);
-                    x17.WriteByte((byte)i);
-                    x17.WriteUInt16((ushort)(SpellBook[i].Icon));
-                    x17.WriteByte(0x00); //spell type? how are we determining this?
-                    x17.WriteString8(SpellBook[i].Name);
-                    x17.WriteString8(SpellBook[i].Name); //prompt? what is this?
-                    x17.WriteByte((byte)SpellBook[i].Lines);
-                    x17.WriteByte(0); //current level
-                    x17.WriteByte((byte)100); //this will need to be updated
-                    Enqueue(x17);
-                }
+                if (this.SpellBook[i] == null) continue;
+                var x17 = new ServerPacket(0x17);
+                x17.WriteByte((byte)i);
+                x17.WriteUInt16((ushort)(SpellBook[i].Icon));
+                x17.WriteByte(0x00); //spell type? how are we determining this?
+                x17.WriteString8(SpellBook[i].Name);
+                x17.WriteString8(SpellBook[i].Name); //prompt? what is this?
+                x17.WriteByte((byte)SpellBook[i].Lines);
+                x17.WriteByte(0); //current level
+                x17.WriteByte((byte)100); //this will need to be updated
+                Enqueue(x17);
             }
         }
 

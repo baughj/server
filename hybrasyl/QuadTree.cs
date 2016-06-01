@@ -146,10 +146,7 @@ namespace C3
         /// <summary>
         /// Gets the rectangle that bounds this QuadTree
         /// </summary>
-        public Rectangle QuadRect
-        {
-            get { return quadTreeRoot.QuadRect; }
-        }
+        public Rectangle QuadRect => quadTreeRoot.QuadRect;
 
         /// <summary>
         /// Get the objects in this tree that intersect with the specified rectangle.
@@ -211,7 +208,7 @@ namespace C3
         ///<exception cref="T:System.NotSupportedException">The <see cref="T:System.Collections.Generic.ICollection`1" /> is read-only.</exception>
         public void Add(T item)
         {
-            QuadTreeObject<T> wrappedObject = new QuadTreeObject<T>(item);
+            var wrappedObject = new QuadTreeObject<T>(item);
             wrappedDictionary.Add(item, wrappedObject);
             quadTreeRoot.Insert(wrappedObject);
         }
@@ -264,10 +261,7 @@ namespace C3
         ///<returns>
         ///The number of elements contained in the <see cref="T:System.Collections.Generic.ICollection`1" />.
         ///</returns>
-        public int Count
-        {
-            get { return wrappedDictionary.Count; }
-        }
+        public int Count => wrappedDictionary.Count;
 
         ///<summary>
         ///Gets a value indicating whether the <see cref="T:System.Collections.Generic.ICollection`1" /> is read-only.
@@ -277,10 +271,7 @@ namespace C3
         ///true if the <see cref="T:System.Collections.Generic.ICollection`1" /> is read-only; otherwise, false.
         ///</returns>
         ///
-        public bool IsReadOnly
-        {
-            get { return false; }
-        }
+        public bool IsReadOnly => false;
 
         ///<summary>
         ///Removes the first occurrence of a specific object from the <see cref="T:System.Collections.Generic.ICollection`1" />.
@@ -343,10 +334,7 @@ namespace C3
         /// <summary>
         /// The top left child for this QuadTree, only usable in debug mode
         /// </summary>
-        public QuadTreeNode<T> RootQuad
-        {
-            get { return quadTreeRoot; }
-        }
+        public QuadTreeNode<T> RootQuad => quadTreeRoot;
     }
 
     /// <summary>
@@ -382,75 +370,48 @@ namespace C3
         /// <summary>
         /// The area this QuadTree represents.
         /// </summary>
-        public Rectangle QuadRect
-        {
-            get { return rect; }
-        }
+        public Rectangle QuadRect => rect;
 
         /// <summary>
         /// The top left child for this QuadTree
         /// </summary>
-        public QuadTreeNode<T> TopLeftChild
-        {
-            get { return childTL; }
-        }
+        public QuadTreeNode<T> TopLeftChild => childTL;
 
         /// <summary>
         /// The top right child for this QuadTree
         /// </summary>
-        public QuadTreeNode<T> TopRightChild
-        {
-            get { return childTR; }
-        }
+        public QuadTreeNode<T> TopRightChild => childTR;
 
         /// <summary>
         /// The bottom left child for this QuadTree
         /// </summary>
-        public QuadTreeNode<T> BottomLeftChild
-        {
-            get { return childBL; }
-        }
+        public QuadTreeNode<T> BottomLeftChild => childBL;
 
         /// <summary>
         /// The bottom right child for this QuadTree
         /// </summary>
-        public QuadTreeNode<T> BottomRightChild
-        {
-            get { return childBR; }
-        }
+        public QuadTreeNode<T> BottomRightChild => childBR;
 
         /// <summary>
         /// This QuadTree's parent
         /// </summary>
-        public QuadTreeNode<T> Parent
-        {
-            get { return parent; }
-        }
+        public QuadTreeNode<T> Parent => parent;
 
         /// <summary>
         /// The objects contained in this QuadTree at it's level (ie, excludes children)
         /// </summary>
         //public List<T> Objects { get { return m_objects; } }
-        internal List<QuadTreeObject<T>> Objects
-        {
-            get { return objects; }
-        }
+        internal List<QuadTreeObject<T>> Objects => objects;
 
         /// <summary>
         /// How many total objects are contained within this QuadTree (ie, includes children)
         /// </summary>
-        public int Count
-        {
-            get { return ObjectCount(); }
-        }
+        public int Count => ObjectCount();
 
         /// <summary>
         /// Returns true if this is a empty leaf node
         /// </summary>
-        public bool IsEmptyLeaf
-        {
-            get { return Count == 0 && childTL == null; }
-        }
+        public bool IsEmptyLeaf => Count == 0 && childTL == null;
 
         #endregion
 
@@ -514,7 +475,7 @@ namespace C3
         {
             if (objects != null)
             {
-                int removeIndex = objects.IndexOf(item);
+                var removeIndex = objects.IndexOf(item);
                 if (removeIndex >= 0)
                 {
                     // We have to consider the case that a tile contains: User, Item1, Item2.  The user can Walk, which removes him from index 0.
@@ -536,7 +497,7 @@ namespace C3
         /// <returns>The number of objects contained within this QuadTree and its children.</returns>
         private int ObjectCount()
         {
-            int count = 0;
+            var count = 0;
 
             // Add the objects at this level
             if (objects != null)
@@ -563,8 +524,8 @@ namespace C3
         private void Subdivide()
         {
             // We've reached capacity, subdivide...
-            Point size = new Point(rect.Width / 2, rect.Height / 2);
-            Point mid = new Point(rect.X + size.X, rect.Y + size.Y);
+            var size = new Point(rect.Width / 2, rect.Height / 2);
+            var mid = new Point(rect.X + size.X, rect.Y + size.Y);
 
             childTL = new QuadTreeNode<T>(this, new Rectangle(rect.Left, rect.Top, size.X, size.Y));
             childTR = new QuadTreeNode<T>(this, new Rectangle(mid.X, rect.Top, size.X, size.Y));
@@ -572,9 +533,9 @@ namespace C3
             childBR = new QuadTreeNode<T>(this, new Rectangle(mid.X, mid.Y, size.X, size.Y));
 
             // If they're completely contained by the quad, bump objects down
-            for (int i = 0; i < objects.Count; i++)
+            for (var i = 0; i < objects.Count; i++)
             {
-                QuadTreeNode<T> destTree = GetDestinationTree(objects[i]);
+                var destTree = GetDestinationTree(objects[i]);
 
                 if (destTree != this)
                 {
@@ -595,7 +556,7 @@ namespace C3
         private QuadTreeNode<T> GetDestinationTree(QuadTreeObject<T> item)
         {
             // If a child can't contain an object, it will live in this Quad
-            QuadTreeNode<T> destTree = this;
+            var destTree = this;
 
             if (childTL.QuadRect.Contains(item.Data.Rect))
             {
@@ -626,12 +587,12 @@ namespace C3
                 // Good, have we moved inside any of our children?
                 if (childTL != null)
                 {
-                    QuadTreeNode<T> dest = GetDestinationTree(item);
+                    var dest = GetDestinationTree(item);
                     if (item.Owner != dest)
                     {
                         // Delete the item from this quad and add it to our child
                         // Note: Do NOT clean during this call, it can potentially delete our destination quad
-                        QuadTreeNode<T> formerOwner = item.Owner;
+                        var formerOwner = item.Owner;
                         Delete(item, false);
                         dest.Insert(item);
 
@@ -777,7 +738,7 @@ namespace C3
                 }
 
                 // Find out which tree this object should go in and add it there
-                QuadTreeNode<T> destTree = GetDestinationTree(item);
+                var destTree = GetDestinationTree(item);
                 if (destTree == this)
                 {
                     Add(item);
@@ -796,7 +757,7 @@ namespace C3
         /// <param name="searchRect">The rectangle to find objects in.</param>
         internal List<T> GetObjects(Rectangle searchRect)
         {
-            List<T> results = new List<T>();
+            var results = new List<T>();
             GetObjects(searchRect, ref results);
             return results;
         }
@@ -822,7 +783,7 @@ namespace C3
                     // Otherwise, if the quad isn't fully contained, only add objects that intersect with the search rectangle
                     if (objects != null)
                     {
-                        for (int i = 0; i < objects.Count; i++)
+                        for (var i = 0; i < objects.Count; i++)
                         {
                             if (searchRect.IntersectsWith(objects[i].Data.Rect))
                             {
@@ -853,7 +814,7 @@ namespace C3
             // If this Quad has objects, add them
             if (objects != null)
             {
-                foreach (QuadTreeObject<T> qto in objects)
+                foreach (var qto in objects)
                 {
                     results.Add(qto.Data);
                 }

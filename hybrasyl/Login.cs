@@ -20,20 +20,14 @@
  *            Kyle Speck    <kojasou@hybrasyl.com>
  */
 
-using System.IO;
 using System.Net;
-using System.Runtime.CompilerServices;
-using System.Runtime.Serialization.Formatters.Binary;
 using Hybrasyl.Enums;
 using Hybrasyl.Objects;
-using Hybrasyl.Properties;
 using System;
 using System.Collections;
 using System.Linq;
 using System.Text.RegularExpressions;
-using IronPython.Modules;
 using Newtonsoft.Json;
-using StackExchange.Redis;
 
 namespace Hybrasyl
 {
@@ -49,7 +43,7 @@ namespace Hybrasyl
 
             PacketHandlers = new LoginPacketHandler[256];
 
-            for (int i = 0; i < 256; ++i)
+            for (var i = 0; i < 256; ++i)
                 PacketHandlers[i] = (c, p) => Logger.WarnFormat("Login: Unhandled opcode 0x{0:X2}", p.Opcode);
 
             PacketHandlers[0x02] = PacketHandler_0x02_CreateA;
@@ -205,7 +199,7 @@ namespace Hybrasyl
                 newPlayer.Password.LastChangedFrom = ((IPEndPoint) client.Socket.RemoteEndPoint).Address.ToString();
                 newPlayer.Nation = Game.World.DefaultNation;
 
-                IDatabase cache = World.DatastoreConnection.GetDatabase();
+                var cache = World.DatastoreConnection.GetDatabase();
                 var myPerson = JsonConvert.SerializeObject(newPlayer);
                 cache.Set(User.GetStorageKey(newPlayer.Name), myPerson);
 
@@ -227,22 +221,17 @@ namespace Hybrasyl
             var id = packet.ReadUInt32();
 
             var redirect = ExpectedConnections[id];
-            if (redirect.Matches(name, key, seed))
-            {
-                ((IDictionary)ExpectedConnections).Remove(id);
+            if (!redirect.Matches(name, key, seed)) return;
+            ((IDictionary)ExpectedConnections).Remove(id);
 
-                client.EncryptionKey = key;
-                client.EncryptionSeed = seed;
+            client.EncryptionKey = key;
+            client.EncryptionSeed = seed;
 
-                if (redirect.Source is Lobby)
-                {
-                    var x60 = new ServerPacket(0x60);
-                    x60.WriteByte(0x00);
-                    x60.WriteUInt32(Game.NotificationCrc);
-                    client.Enqueue(x60);
-                }
-            }
-
+            if (!(redirect.Source is Lobby)) return;
+            var x60 = new ServerPacket(0x60);
+            x60.WriteByte(0x00);
+            x60.WriteUInt32(Game.NotificationCrc);
+            client.Enqueue(x60);
         }
 
         // Chart for all error password-related error codes were provided by kojasou@ on
@@ -352,7 +341,7 @@ namespace Hybrasyl
             }
 
             // Examples: party@11, temP.49
-            Regex r = new Regex("^[a-zA-Z0-9]*$");
+            var r = new Regex("^[a-zA-Z0-9]*$");
             if (!r.IsMatch(password))
             {
                 code = 0x09;

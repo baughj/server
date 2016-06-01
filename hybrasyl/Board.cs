@@ -1,11 +1,29 @@
-﻿using System;
+﻿/*
+ * This file is part of Project Hybrasyl.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the Affero General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * without ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the Affero General Public License
+ * for more details.
+ *
+ * You should have received a copy of the Affero General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * (C) 2016 Project Hybrasyl (info@hybrasyl.com)
+ *
+ * Authors:   Justin Baugh  <baughj@hybrasyl.com>
+ *
+ */
+ 
+ using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Data.SqlTypes;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
-using Microsoft.Scripting.Interpreter;
 using Newtonsoft.Json;
 
 namespace Hybrasyl
@@ -172,7 +190,7 @@ namespace Hybrasyl
 
         public bool HasUnreadMessages
         {
-            get { return Messages.Where(m => m.Read == false).Count() > 0; }
+            get { return Messages.Count(m => m.Read == false) > 0; }
         }
     }
 
@@ -207,11 +225,7 @@ namespace Hybrasyl
        
         public override bool ReceiveMessage(Message newMessage)
         {
-            if (CheckAccessLevel(newMessage.Sender, BoardAccessLevel.Write))
-            {
-                return base.ReceiveMessage(newMessage);
-            }
-            return false;
+            return CheckAccessLevel(newMessage.Sender, BoardAccessLevel.Write) && base.ReceiveMessage(newMessage);
         }
 
         public bool CheckAccessLevel(string charName, BoardAccessLevel level)

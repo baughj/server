@@ -73,11 +73,11 @@ namespace Hybrasyl
                 return null;
             }
 
-            BinaryFormatter binaryFormatter = new BinaryFormatter();
-            using (MemoryStream memoryStream = new MemoryStream())
+            var binaryFormatter = new BinaryFormatter();
+            using (var memoryStream = new MemoryStream())
             {
                 binaryFormatter.Serialize(memoryStream, o);
-                byte[] objectDataAsStream = memoryStream.ToArray();
+                var objectDataAsStream = memoryStream.ToArray();
                 return objectDataAsStream;
             }
         }
@@ -89,10 +89,10 @@ namespace Hybrasyl
                 return default(T);
             }
 
-            BinaryFormatter binaryFormatter = new BinaryFormatter();
-            using (MemoryStream memoryStream = new MemoryStream(stream))
+            var binaryFormatter = new BinaryFormatter();
+            using (var memoryStream = new MemoryStream(stream))
             {
-                T result = (T)binaryFormatter.Deserialize(memoryStream);
+                var result = (T)binaryFormatter.Deserialize(memoryStream);
                 return result;
             }
         }
@@ -140,11 +140,11 @@ namespace Hybrasyl
         }
 
         public List<DialogSequence> GlobalSequences { get; set; }
-        public Dictionary<String, DialogSequence> GlobalSequencesCatalog { get; set; }
+        public Dictionary<string, DialogSequence> GlobalSequencesCatalog { get; set; }
         private Dictionary<MerchantMenuItem, MerchantMenuHandler> merchantMenuHandlers;
 
-        public Dictionary<Tuple<Sex, String>, XSD.ItemType> ItemCatalog { get; set; }
-        public Dictionary<String, Map> MapCatalog { get; set; }
+        public Dictionary<Tuple<Sex, string>, XSD.ItemType> ItemCatalog { get; set; }
+        public Dictionary<string, Map> MapCatalog { get; set; }
 
         public HybrasylScriptProcessor ScriptProcessor { get; set; }
 
@@ -222,9 +222,9 @@ namespace Hybrasyl
             MessageboardIndex = new Dictionary<int, Board>();
 
 
-            GlobalSequencesCatalog = new Dictionary<String, DialogSequence>();
-            ItemCatalog = new Dictionary<Tuple<Sex, String>, XSD.ItemType>();
-            MapCatalog = new Dictionary<String, Map>();
+            GlobalSequencesCatalog = new Dictionary<string, DialogSequence>();
+            ItemCatalog = new Dictionary<Tuple<Sex, string>, XSD.ItemType>();
+            MapCatalog = new Dictionary<string, Map>();
 
             ScriptProcessor = new HybrasylScriptProcessor(this);
             MessageQueue = new BlockingCollection<HybrasylMessage>(new ConcurrentQueue<HybrasylMessage>());
@@ -239,7 +239,7 @@ namespace Hybrasyl
                 }
             };
 
-            if (!String.IsNullOrEmpty(store.Password))
+            if (!string.IsNullOrEmpty(store.Password))
                 datastoreConfig.Password = store.Password;
 
             _lazyConnector = new Lazy<ConnectionMultiplexer>(() => ConnectionMultiplexer.Connect(datastoreConfig));
@@ -288,7 +288,7 @@ namespace Hybrasyl
             {
                 try
                 {
-                    XSD.Map newMap = Serializer.Deserialize(XmlReader.Create(xml), new XSD.Map());
+                    var newMap = Serializer.Deserialize(XmlReader.Create(xml), new XSD.Map());
                     var map = new Map(newMap, this);
                     Maps.Add(map.Id, map);
                     MapCatalog.Add(map.Name, map);
@@ -307,7 +307,7 @@ namespace Hybrasyl
             {
                 try
                 {
-                    Nation newNation = Serializer.Deserialize(XmlReader.Create(xml), new Nation());
+                    var newNation = Serializer.Deserialize(XmlReader.Create(xml), new Nation());
                     Logger.DebugFormat("Nations: Loaded {0}", newNation.Name);
                     Nations.Add(newNation.Name, newNation);
                 }
@@ -339,7 +339,7 @@ namespace Hybrasyl
             {
                 if(map.Key == 500)
                 {
-                    Dictionary<Monster, int> mobs = new Dictionary<Monster, int>();
+                    var mobs = new Dictionary<Monster, int>();
                     mobs.Add(
                         new Monster()
                         {
@@ -409,7 +409,7 @@ namespace Hybrasyl
             {
                 try
                 {
-                    XSD.WorldMap newWorldMap = Serializer.Deserialize(XmlReader.Create(xml), new XSD.WorldMap());
+                    var newWorldMap = Serializer.Deserialize(XmlReader.Create(xml), new XSD.WorldMap());
                     var worldmap = new WorldMap(newWorldMap);
                     WorldMaps.Add(worldmap.Name, worldmap);
                     foreach (var point in worldmap.Points)
@@ -429,7 +429,7 @@ namespace Hybrasyl
             {
                 try
                 {
-                    VariantGroupType newGroup = Serializer.Deserialize(XmlReader.Create(xml), new VariantGroupType());
+                    var newGroup = Serializer.Deserialize(XmlReader.Create(xml), new VariantGroupType());
                     Logger.DebugFormat("Item variants: loaded {0}", newGroup.Name);
                     ItemVariants.Add(newGroup.Name, newGroup);
                 }
@@ -446,7 +446,7 @@ namespace Hybrasyl
             {
                 try
                 {
-                    XSD.ItemType newItem = Serializer.Deserialize(XmlReader.Create(xml), new XSD.ItemType());
+                    var newItem = Serializer.Deserialize(XmlReader.Create(xml), new XSD.ItemType());
                     Logger.DebugFormat("Items: loaded {0}, id {1}", newItem.Name, newItem.Id);
                     Items.Add(newItem.Id, newItem);
                     ItemCatalog.Add(new Tuple<Sex, string>(Sex.Neutral, newItem.Name), newItem);
@@ -472,8 +472,8 @@ namespace Hybrasyl
             {
                 try
                 {
-                    string name = string.Empty;
-                    XSD.Castable newCastable = Serializer.Deserialize(XmlReader.Create(xml), new XSD.Castable());
+                    var name = string.Empty;
+                    var newCastable = Serializer.Deserialize(XmlReader.Create(xml), new XSD.Castable());
                     if (newCastable.Book == XSD.Book.primaryskill || newCastable.Book == XSD.Book.secondaryskill ||
                         newCastable.Book == XSD.Book.utilityskill)
                     {
@@ -673,7 +673,7 @@ namespace Hybrasyl
 
             #region SClass
 
-            for (int i = 1; i <= 5; ++i)
+            for (var i = 1; i <= 5; ++i)
             {
                 var sclass = new Metafile("SClass" + i);
                 sclass.Nodes.Add("Skill");
@@ -681,12 +681,12 @@ namespace Hybrasyl
                     // placeholder; change to skills where class == i, are learnable from trainer, and sort by level
                 {
                     sclass.Nodes.Add(new MetafileNode(skill.Name,
-                        string.Format("{0}/{1}/{2}", 0, 0, 0), // req level, master (0/1), req ab
-                        string.Format("{0}/{1}/{2}", 0, 0, 0), // skill icon, x position (defunct), y position (defunct)
-                        string.Format("{0}/{1}/{2}/{3}/{4}", 3, 3, 3, 3, 3),
+                        $"{0}/{0}/{0}", // req level, master (0/1), req ab
+                        $"{0}/{0}/{0}", // skill icon, x position (defunct), y position (defunct)
+                        $"{3}/{3}/{3}/{3}/{3}",
                         // str, dex, int, wis, con (not a typo, dex after str)
-                        string.Format("{0}/{1}", 0, 0), // req skill 1 (skill name or 0 for none), req skill 1 level
-                        string.Format("{0}/{1}", 0, 0) // req skill 2 (skill name or 0 for none), req skill 2 level
+                        $"{0}/{0}", // req skill 1 (skill name or 0 for none), req skill 1 level
+                        $"{0}/{0}" // req skill 2 (skill name or 0 for none), req skill 2 level
                         ));
                 }
                 sclass.Nodes.Add("Skill_End");
@@ -695,12 +695,12 @@ namespace Hybrasyl
                     // placeholder; change to skills where class == i, are learnable from trainer, and sort by level
                 {
                     sclass.Nodes.Add(new MetafileNode(spell.Name,
-                        string.Format("{0}/{1}/{2}", 0, 0, 0), // req level, master (0/1), req ab
-                        string.Format("{0}/{1}/{2}", 0, 0, 0), // spell icon, x position (defunct), y position (defunct)
-                        string.Format("{0}/{1}/{2}/{3}/{4}", 3, 3, 3, 3, 3),
+                        $"{0}/{0}/{0}", // req level, master (0/1), req ab
+                        $"{0}/{0}/{0}", // spell icon, x position (defunct), y position (defunct)
+                        $"{3}/{3}/{3}/{3}/{3}",
                         // str, dex, int, wis, con (not a typo, dex after str)
-                        string.Format("{0}/{1}", 0, 0), // req spell 1 (spell name or 0 for none), req spell 1 level
-                        string.Format("{0}/{1}", 0, 0) // req spell 2 (spell name or 0 for none), req spell 2 level
+                        $"{0}/{0}", // req spell 1 (spell name or 0 for none), req spell 1 level
+                        $"{0}/{0}" // req spell 2 (spell name or 0 for none), req spell 2 level
                         ));
                 }
                 sclass.Nodes.Add("Spell_End");
@@ -751,13 +751,11 @@ namespace Hybrasyl
                 {
                     try
                     {
-                        if (Path.GetExtension(file) == ".py")
-                        {
-                            var scriptname = Path.GetFileName(file);
-                            Logger.InfoFormat("Loading script {0}\\{1}", dir, scriptname);
-                            var script = new Script(file, ScriptProcessor);
-                            ScriptProcessor.RegisterScript(script);
-                        }
+                        if (Path.GetExtension(file) != ".py") continue;
+                        var scriptname = Path.GetFileName(file);
+                        Logger.InfoFormat("Loading script {0}\\{1}", dir, scriptname);
+                        var script = new Script(file, ScriptProcessor);
+                        ScriptProcessor.RegisterScript(script);
                     }
                     catch (Exception e)
                     {
@@ -913,25 +911,23 @@ namespace Hybrasyl
             // clean up after a broken connection
             var connectionId = (long) message.Arguments[0];
             User user;
-            if (ActiveUsers.TryRemove(connectionId, out user))
+            if (!ActiveUsers.TryRemove(connectionId, out user)) return;
+            Logger.InfoFormat("cid {0}: closed, player {1} removed", connectionId, user.Name);
+            if (user.ActiveExchange != null)
+                user.ActiveExchange.CancelExchange(user);
+            ((IDictionary) ActiveUsersByName).Remove(user.Name);
+            user.Save();
+            user.UpdateLogoffTime();
+            user.Map.Remove(user);
+
+            if (user.Group != null)
             {
-                Logger.InfoFormat("cid {0}: closed, player {1} removed", connectionId, user.Name);
-                if (user.ActiveExchange != null)
-                    user.ActiveExchange.CancelExchange(user);
-                ((IDictionary) ActiveUsersByName).Remove(user.Name);
-                user.Save();
-                user.UpdateLogoffTime();
-                user.Map.Remove(user);
-
-                if (user.Group != null)
-                {
-                    user.Group.Remove(user);
-                }
-
-                Remove(user);
-                Logger.DebugFormat("cid {0}: {1} cleaned up successfully", user.Name);
-                DeleteUser(user.Name);
+                user.Group.Remove(user);
             }
+
+            Remove(user);
+            Logger.DebugFormat("cid {0}: {1} cleaned up successfully", user.Name);
+            DeleteUser(user.Name);
         }
 
         private void ControlMessage_RegenerateUser(HybrasylControlMessage message)
@@ -942,31 +938,29 @@ namespace Hybrasyl
             // Regen = regen * 0.0015 (so 100 regen = 15%)
             User user;
             var connectionId = (long) message.Arguments[0];
-            if (ActiveUsers.TryGetValue(connectionId, out user))
+            if (!ActiveUsers.TryGetValue(connectionId, out user)) return;
+            uint hpRegen = 0;
+            uint mpRegen = 0;
+            var fixedRegenBuff = Math.Min(user.Regen*0.0015, 0.15);
+            if (user.Hp != user.MaximumHp)
             {
-                uint hpRegen = 0;
-                uint mpRegen = 0;
-                double fixedRegenBuff = Math.Min(user.Regen*0.0015, 0.15);
-                if (user.Hp != user.MaximumHp)
-                {
-                    hpRegen = (uint) Math.Min(user.MaximumHp*(0.1*Math.Max(user.Con, (user.Con - user.Level))*0.01),
-                        user.MaximumHp*0.20);
-                    hpRegen = hpRegen + (uint) (fixedRegenBuff*user.MaximumHp);
+                hpRegen = (uint) Math.Min(user.MaximumHp*(0.1*Math.Max(user.Con, (user.Con - user.Level))*0.01),
+                    user.MaximumHp*0.20);
+                hpRegen = hpRegen + (uint) (fixedRegenBuff*user.MaximumHp);
 
-                }
-                if (user.Mp != user.MaximumMp)
-                {
-                    mpRegen = (uint) Math.Min(user.MaximumMp*(0.1*Math.Max(user.Int, (user.Int - user.Level))*0.01),
-                        user.MaximumMp*0.20);
-                    mpRegen = mpRegen + (uint) (fixedRegenBuff*user.MaximumMp);
-
-                }
-                Logger.DebugFormat("User {0}: regen HP {1}, MP {2}", user.Name,
-                    hpRegen, mpRegen);
-                user.Hp = Math.Min(user.Hp + hpRegen, user.MaximumHp);
-                user.Mp = Math.Min(user.Mp + mpRegen, user.MaximumMp);
-                user.UpdateAttributes(StatUpdateFlags.Current);
             }
+            if (user.Mp != user.MaximumMp)
+            {
+                mpRegen = (uint) Math.Min(user.MaximumMp*(0.1*Math.Max(user.Int, (user.Int - user.Level))*0.01),
+                    user.MaximumMp*0.20);
+                mpRegen = mpRegen + (uint) (fixedRegenBuff*user.MaximumMp);
+
+            }
+            Logger.DebugFormat("User {0}: regen HP {1}, MP {2}", user.Name,
+                hpRegen, mpRegen);
+            user.Hp = Math.Min(user.Hp + hpRegen, user.MaximumHp);
+            user.Mp = Math.Min(user.Mp + mpRegen, user.MaximumMp);
+            user.UpdateAttributes(StatUpdateFlags.Current);
         }
         private void ControlMessage_SaveUser(HybrasylControlMessage message)
         {
@@ -1040,13 +1034,13 @@ namespace Hybrasyl
         private void PacketHandler_0x05_RequestMap(Object obj, ClientPacket packet)
         {
             var user = (User) obj;
-            int index = 0;
+            var index = 0;
 
             for (ushort row = 0; row < user.Map.Y; ++row)
             {
                 var x3C = new ServerPacket(0x3C);
                 x3C.WriteUInt16(row);
-                for (int col = 0; col < user.Map.X*6; col += 2)
+                for (var col = 0; col < user.Map.X*6; col += 2)
                 {
                     x3C.WriteByte(user.Map.RawData[index + 1]);
                     x3C.WriteByte(user.Map.RawData[index]);
@@ -1111,11 +1105,11 @@ namespace Hybrasyl
                 }
                 if (item.Stackable && user.Inventory.Contains(item.TemplateId))
                 {
-                    byte existingSlot = user.Inventory.SlotOf(item.TemplateId);
+                    var existingSlot = user.Inventory.SlotOf(item.TemplateId);
                     var existingItem = user.Inventory[existingSlot];
 
-                    int maxCanGive = existingItem.MaximumStack - existingItem.Count;
-                    int quantity = Math.Min(item.Count, maxCanGive);
+                    var maxCanGive = existingItem.MaximumStack - existingItem.Count;
+                    var quantity = Math.Min(item.Count, maxCanGive);
 
                     item.Count -= quantity;
                     existingItem.Count += quantity;
@@ -1129,7 +1123,7 @@ namespace Hybrasyl
                     else
                     {
                         user.Map.Insert(item, user.X, user.Y);
-                        user.SendMessage(string.Format("You can't carry any more {0}.", item.Name), 3);
+                        user.SendMessage($"You can't carry any more {item.Name}.", 3);
                     }
                 }
                 else
@@ -1183,7 +1177,7 @@ namespace Hybrasyl
                 return;
             }
 
-            Item toDrop = user.Inventory[slot];
+            var toDrop = user.Inventory[slot];
 
             if (toDrop.Stackable && count < toDrop.Count)
             {
@@ -1262,7 +1256,7 @@ namespace Hybrasyl
                         break;
 
                     case "/group":
-                        User newMember = FindUser(args[1]);
+                        var newMember = FindUser(args[1]);
 
                         if (newMember == null)
                         {
@@ -1338,7 +1332,7 @@ namespace Hybrasyl
                         break;
                     case "/teleport":
                     {
-                        ushort number = ushort.MaxValue;
+                        var number = ushort.MaxValue;
                         byte x = user.X, y = user.Y;
 
                         if (args.Length == 2)
@@ -1399,13 +1393,13 @@ namespace Hybrasyl
                         else if (args.Length == 2)
                             searchString = args[1];
                         else
-                            searchString = String.Join(" ", args, 1, args.Length - 1);
+                            searchString = string.Join(" ", args, 1, args.Length - 1);
 
                         Regex searchTerm;
                         try
                         {
                             Logger.InfoFormat("Search term was {0}",searchString);
-                            searchTerm = new Regex(String.Format("{0}", searchString));
+                            searchTerm = new Regex($"{searchString}");
                         }
                         catch
                         {
@@ -1418,13 +1412,12 @@ namespace Hybrasyl
                             where searchTerm.IsMatch(amap.Key)
                             select amap;
                         var result = queryMaps.Aggregate("",
-                            (current, map) => current + String.Format("{0} - {1}\n", map.Value.Id, map.Value.Name));
+                            (current, map) => current + $"{map.Value.Id} - {map.Value.Name}\n");
 
                         if (result.Length > 65400)
-                            result = String.Format("{0}\n(Results truncated)", result.Substring(0, 65400));
+                            result = $"{result.Substring(0, 65400)}\n(Results truncated)";
 
-                        user.SendMessage(String.Format("Search Results\n---------------\n\n{0}",
-                            result),
+                        user.SendMessage($"Search Results\n---------------\n\n{result}",
                             MessageTypes.SLATE_WITH_SCROLLBAR);
 
                     }
@@ -1500,7 +1493,7 @@ namespace Hybrasyl
                         if (Hybrasyl.Constants.CLASSES.TryGetValue(className, out classValue))
                         {
                             user.Class = (Hybrasyl.Enums.Class) Hybrasyl.Constants.CLASSES[className];
-                            user.SendMessage(String.Format("Class set to {0}", className.ToLower()), 0x1);
+                            user.SendMessage($"Class set to {className.ToLower()}", 0x1);
                         }
                         else
                         {
@@ -1536,7 +1529,7 @@ namespace Hybrasyl
                         {
                             user.Level = newLevel;
                             user.UpdateAttributes(StatUpdateFlags.Full);
-                            user.SendMessage(String.Format("Level changed to {0}", newLevel), 0x1);
+                            user.SendMessage($"Level changed to {newLevel}", 0x1);
                         }
                     }
                         break;
@@ -1583,7 +1576,7 @@ namespace Hybrasyl
                         var guild = string.Join(" ", args, 1, args.Length - 1);
                         // TODO: GUILD SUPPORT
                         //user.guild = guild;
-                        user.SendMessage(String.Format("Guild changed to {0}", guild), 0x1);
+                        user.SendMessage($"Guild changed to {guild}", 0x1);
                     }
                         break;
                     case "/guildrank":
@@ -1591,7 +1584,7 @@ namespace Hybrasyl
                         var guildrank = string.Join(" ", args, 1, args.Length - 1);
                         // TODO: GUILD SUPPORT 
                         //user.GuildRank = guildrank;
-                        user.SendMessage(String.Format("Guild rank changed to {0}", guildrank), 0x1);
+                        user.SendMessage($"Guild rank changed to {guildrank}", 0x1);
                     }
                         break;
                     case "/title":
@@ -1599,7 +1592,7 @@ namespace Hybrasyl
                         var title = string.Join(" ", args, 1, args.Length - 1);
                         // TODO: TITLE SUPPORT
                         //user.Title = title;
-                        user.SendMessage(String.Format("Title changed to {0}", title), 0x1);
+                        user.SendMessage($"Title changed to {title}", 0x1);
                     }
                         break;
                     case "/debug":
@@ -1636,7 +1629,7 @@ namespace Hybrasyl
                         var ActiveUserContents = "Contents of ActiveUsers Concurrent Dictionary\n";
                         foreach (var pair in GlobalConnectionManifest.ConnectedClients)
                         {
-                            var serverType = String.Empty;
+                            var serverType = string.Empty;
                             switch (pair.Value.ServerType)
                             {
                                 case ServerTypes.Lobby:
@@ -1652,13 +1645,12 @@ namespace Hybrasyl
                             try
                             {
 
-                                gcmContents = gcmContents + String.Format("{0}:{1} - {2}:{3}\n", pair.Key,
-                                    ((IPEndPoint) pair.Value.Socket.RemoteEndPoint).Address.ToString(),
-                                    ((IPEndPoint) pair.Value.Socket.RemoteEndPoint).Port, serverType);
+                                gcmContents = gcmContents +
+                                              $"{pair.Key}:{((IPEndPoint) pair.Value.Socket.RemoteEndPoint).Address.ToString()} - {((IPEndPoint) pair.Value.Socket.RemoteEndPoint).Port}:{serverType}\n";
                             }
                             catch
                             {
-                                gcmContents = gcmContents + String.Format("{0}:{1} disposed\n", pair.Key, serverType);
+                                gcmContents = gcmContents + $"{pair.Key}:{serverType} disposed\n";
                             }
                         }
                         foreach (var tehuser in Users)
@@ -1668,12 +1660,12 @@ namespace Hybrasyl
                         foreach (var tehotheruser in ActiveUsersByName)
                         {
                             ActiveUserContents = ActiveUserContents +
-                                                 String.Format("{0}: {1}\n", tehotheruser.Value, tehotheruser.Key);
+                                                 $"{tehotheruser.Value}: {tehotheruser.Key}\n";
                         }
 
                         // Report to the end user
                         user.SendMessage(
-                            String.Format("{0}\n\n{1}\n\n{2}", gcmContents, userContents, ActiveUserContents),
+                            $"{gcmContents}\n\n{userContents}\n\n{ActiveUserContents}",
                             MessageTypes.SLATE_WITH_SCROLLBAR);
 
                     }
@@ -1684,7 +1676,7 @@ namespace Hybrasyl
                         string itemName;
 
                         Logger.DebugFormat("/item: Last argument is {0}", args.Last());
-                        Regex integer = new Regex(@"^\d+$");
+                        var integer = new Regex(@"^\d+$");
 
                         if (integer.IsMatch(args.Last()))
                         {
@@ -1721,7 +1713,7 @@ namespace Hybrasyl
                         var value = args[2];
                         var property = typeof(User).GetProperty(valueName);
                         property.SetValue(user, Convert.ToByte(value));
-                        user.SendSystemMessage(String.Format("Magic value {0} set to {1}", valueName, value));
+                        user.SendSystemMessage($"Magic value {valueName} set to {value}");
                         user.UpdateAttributes(StatUpdateFlags.Full);
                     }
                         break;
@@ -1730,11 +1722,11 @@ namespace Hybrasyl
                             string skillName;
 
                             Logger.DebugFormat("/skill: Last argument is {0}", args.Last());
-                            Regex integer = new Regex(@"^\d+$");
+                            var integer = new Regex(@"^\d+$");
 
                             skillName = string.Join(" ", args, 1, args.Length - 1);
 
-                            Castable skill = Skills.Where(x => x.Value.Name == skillName).FirstOrDefault().Value;
+                            var skill = Skills.Where(x => x.Value.Name == skillName).FirstOrDefault().Value;
                             user.AddSkill(skill);
                         }
                         break;
@@ -1745,7 +1737,7 @@ namespace Hybrasyl
 
                             creatureName = string.Join(" ", args, 1, args.Length - 1);
 
-                            Creature creature = new Creature()
+                            var creature = new Creature()
                             {
                                 Sprite = 1,
                                 World = Game.World,
@@ -1788,7 +1780,7 @@ namespace Hybrasyl
                         {
                             userObj.IsMuted = true;
                             userObj.Save();
-                            user.SendMessage(String.Format("{0} is now muted.", userObj.Name), 0x1);
+                            user.SendMessage($"{userObj.Name} is now muted.", 0x1);
                         }
                         else
                         {
@@ -1851,7 +1843,7 @@ namespace Hybrasyl
                         {
                             userObj.IsMuted = false;
                             userObj.Save();
-                            user.SendMessage(String.Format("{0} is now unmuted.", userObj.Name), 0x1);
+                            user.SendMessage($"{userObj.Name} is now unmuted.", 0x1);
                         }
                         else
                         {
@@ -1874,7 +1866,7 @@ namespace Hybrasyl
                         if (!user.IsPrivileged)
                             return;
                         var password = args[1];
-                        if (String.Equals(password, Constants.ShutdownPassword))
+                        if (string.Equals(password, Constants.ShutdownPassword))
                         {
                             MessageQueue.Add(new HybrasylControlMessage(ControlOpcodes.ShutdownServer, user.Name));
                         }
@@ -1898,103 +1890,102 @@ namespace Hybrasyl
                                     script.Disabled = true;
                                     if (script.Load())
                                     {
-                                        user.SendMessage(String.Format("Script {0}: reloaded", script.Name), 0x01);
+                                        user.SendMessage($"Script {script.Name}: reloaded", 0x01);
                                         if (script.InstantiateScriptable())
                                             user.SendMessage(
-                                                String.Format("Script {0}: instances recreated", script.Name), 0x01);
+                                                $"Script {script.Name}: instances recreated", 0x01);
                                     }
                                     else
                                     {
                                         user.SendMessage(
-                                            String.Format("Script {0}: load error, consult status", script.Name), 0x01);
+                                            $"Script {script.Name}: load error, consult status", 0x01);
                                     }
                                 }
                                 else if (args[1].ToLower() == "enable")
                                 {
                                     script.Disabled = false;
-                                    user.SendMessage(String.Format("Script {0}: enabled", script.Name), 0x01);
+                                    user.SendMessage($"Script {script.Name}: enabled", 0x01);
                                 }
                                 else if (args[1].ToLower() == "disable")
                                 {
                                     script.Disabled = true;
-                                    user.SendMessage(String.Format("Script {0}: disabled", script.Name), 0x01);
+                                    user.SendMessage($"Script {script.Name}: disabled", 0x01);
                                 }
                                 else if (args[1].ToLower() == "status")
                                 {
-                                    var scriptStatus = String.Format("{0}:", script.Name);
-                                    String errorSummary = "--- Error Summary ---\n";
+                                    var scriptStatus = $"{script.Name}:";
+                                        var errorSummary = "--- Error Summary ---\n";
 
                                     if (script.Instance == null)
-                                        scriptStatus = String.Format("{0} not instantiated,", scriptStatus);
+                                        scriptStatus = $"{scriptStatus} not instantiated,";
                                     else
-                                        scriptStatus = String.Format("{0} instantiated,", scriptStatus);
+                                        scriptStatus = $"{scriptStatus} instantiated,";
                                     if (script.Disabled)
-                                        scriptStatus = String.Format("{0} disabled", scriptStatus);
+                                        scriptStatus = $"{scriptStatus} disabled";
                                     else
-                                        scriptStatus = String.Format("{0} enabled", scriptStatus);
+                                        scriptStatus = $"{scriptStatus} enabled";
 
-                                    if (script.LastRuntimeError == String.Empty &&
-                                        script.CompilationError == String.Empty)
-                                        errorSummary = String.Format("{0} no errors", errorSummary);
+                                    if (script.LastRuntimeError == string.Empty &&
+                                        script.CompilationError == string.Empty)
+                                        errorSummary = $"{errorSummary} no errors";
                                     else
                                     {
-                                        if (script.CompilationError != String.Empty)
-                                            errorSummary = String.Format("{0} compilation error: {1}", errorSummary,
-                                                script.CompilationError);
-                                        if (script.LastRuntimeError != String.Empty)
-                                            errorSummary = String.Format("{0} runtime error: {1}", errorSummary,
-                                                script.LastRuntimeError);
+                                        if (script.CompilationError != string.Empty)
+                                            errorSummary =
+                                                $"{errorSummary} compilation error: {script.CompilationError}";
+                                        if (script.LastRuntimeError != string.Empty)
+                                            errorSummary = $"{errorSummary} runtime error: {script.LastRuntimeError}";
                                     }
 
                                     // Report to the end user
-                                    user.SendMessage(String.Format("{0}\n\n{1}", scriptStatus, errorSummary),
+                                    user.SendMessage($"{scriptStatus}\n\n{errorSummary}",
                                         MessageTypes.SLATE_WITH_SCROLLBAR);
                                 }
                             }
                             else
                             {
-                                user.SendMessage(String.Format("Script {0} not found!", args[2]), 0x01);
+                                user.SendMessage($"Script {args[2]} not found!", 0x01);
                             }
                         }
                         else if (args.Count() == 2)
                         {
                             if (args[1].ToLower() == "status")
                             {
-                                // Display status information for all NPCs
-                                String statusReport = String.Empty;
-                                String errorSummary = "--- Error Summary ---\n";
+                                    // Display status information for all NPCs
+                                    var statusReport = string.Empty;
+                                    var errorSummary = "--- Error Summary ---\n";
 
-                                foreach (KeyValuePair<string, Script> entry in ScriptProcessor.Scripts)
+                                foreach (var entry in ScriptProcessor.Scripts)
                                 {
-                                    var scriptStatus = String.Format("{0}:", entry.Key);
-                                    var scriptErrors = String.Format("{0}:", entry.Key);
+                                    var scriptStatus = $"{entry.Key}:";
+                                    var scriptErrors = $"{entry.Key}:";
                                     if (entry.Value.Instance == null)
-                                        scriptStatus = String.Format("{0} not instantiated,", scriptStatus);
+                                        scriptStatus = $"{scriptStatus} not instantiated,";
                                     else
-                                        scriptStatus = String.Format("{0} instantiated,", scriptStatus);
+                                        scriptStatus = $"{scriptStatus} instantiated,";
                                     if (entry.Value.Disabled)
-                                        scriptStatus = String.Format("{0} disabled", scriptStatus);
+                                        scriptStatus = $"{scriptStatus} disabled";
                                     else
-                                        scriptStatus = String.Format("{0} enabled", scriptStatus);
+                                        scriptStatus = $"{scriptStatus} enabled";
 
-                                    if (entry.Value.LastRuntimeError == String.Empty &&
-                                        entry.Value.CompilationError == String.Empty)
-                                        scriptErrors = String.Format("{0} no errors", scriptErrors);
+                                    if (entry.Value.LastRuntimeError == string.Empty &&
+                                        entry.Value.CompilationError == string.Empty)
+                                        scriptErrors = $"{scriptErrors} no errors";
                                     else
                                     {
-                                        if (entry.Value.CompilationError != String.Empty)
-                                            scriptErrors = String.Format("{0} compilation error: {1}", scriptErrors,
-                                                entry.Value.CompilationError);
-                                        if (entry.Value.LastRuntimeError != String.Empty)
-                                            scriptErrors = String.Format("{0} runtime error: {1}", scriptErrors,
-                                                entry.Value.LastRuntimeError);
+                                        if (entry.Value.CompilationError != string.Empty)
+                                            scriptErrors =
+                                                $"{scriptErrors} compilation error: {entry.Value.CompilationError}";
+                                        if (entry.Value.LastRuntimeError != string.Empty)
+                                            scriptErrors =
+                                                $"{scriptErrors} runtime error: {entry.Value.LastRuntimeError}";
                                     }
-                                    statusReport = String.Format("{0}\n{1}", statusReport, scriptStatus);
-                                    errorSummary = String.Format("{0}\n{1}", errorSummary, scriptErrors);
+                                    statusReport = $"{statusReport}\n{scriptStatus}";
+                                    errorSummary = $"{errorSummary}\n{scriptErrors}";
 
                                 }
                                 // Report to the end user
-                                user.SendMessage(String.Format("{0}\n\n{1}", statusReport, errorSummary),
+                                user.SendMessage($"{statusReport}\n\n{errorSummary}",
                                     MessageTypes.SLATE_WITH_SCROLLBAR);
                             }
 
@@ -2010,7 +2001,7 @@ namespace Hybrasyl
                         if (!user.IsPrivileged)
                             return;
 
-                        string errorMessage = "Command format is: /rollchar <class> <level>";
+                        var errorMessage = "Command format is: /rollchar <class> <level>";
                         byte level = 1;
 
                         if (args.Length != 3)
@@ -2042,7 +2033,8 @@ namespace Hybrasyl
                                 testUser.GiveExperience(testUser.ExpToLevel);
                             }
 
-                            user.SendMessage(string.Format("{0}, Level {1}, Hp: {2}, Mp: {3}", testUser.Class, testUser.Level, testUser.BaseHp, testUser.BaseMp), 0x01);
+                            user.SendMessage(
+                                $"{testUser.Class}, Level {testUser.Level}, Hp: {testUser.BaseHp}, Mp: {testUser.BaseMp}", 0x01);
                         }
                     }
                     break;
@@ -2186,7 +2178,7 @@ namespace Hybrasyl
 
             foreach (var user in list)
             {
-                int levelDifference = Math.Abs((int)user.Level - me.Level);
+                var levelDifference = Math.Abs((int)user.Level - me.Level);
 
                 listPacket.WriteByte((byte)user.Class);
                 // TODO: GUILD SUPPORT
@@ -2247,8 +2239,8 @@ namespace Hybrasyl
                 case Enums.ItemType.Equipment:
                 {
 
-                    // Check item requirements here before we do anything rash
-                    String message;
+                        // Check item requirements here before we do anything rash
+                        string message;
                     if (!item.CheckRequirements(user, out message))
                     {
                         // If an item can't be equipped, CheckRequirements will return false
@@ -2446,8 +2438,8 @@ namespace Hybrasyl
             // stage:
             //   0x02 = user is sending initial request to invitee
             //   0x03 = invitee responds with a "yes"
-            byte stage = packet.ReadByte();
-            User partner = FindUser(packet.ReadString8());
+            var stage = packet.ReadByte();
+            var partner = FindUser(packet.ReadString8());
 
             // TODO: currently leaving five bytes on the table here. There's probably some 
             // additional work that needs to happen though I haven't been able to determine
@@ -2479,18 +2471,18 @@ namespace Hybrasyl
                     // Let's find out if they're eligible and invite them if so.
                     if (partner.Grouped)
                     {
-                        user.SendMessage(String.Format("{0} is already in a group.", partner.Name), MessageTypes.SYSTEM);
+                        user.SendMessage($"{partner.Name} is already in a group.", MessageTypes.SYSTEM);
                         return;
                     }
 
                     if (!partner.Grouping)
                     {
-                        user.SendMessage(String.Format("{0} is not accepting group invitations.", partner.Name), MessageTypes.SYSTEM);
+                        user.SendMessage($"{partner.Name} is not accepting group invitations.", MessageTypes.SYSTEM);
                         return;
                     }
 
                     // Send partner a dialog asking whether they want to group (opcode 0x63).
-                    ServerPacket response = new ServerPacket(0x63);
+                    var response = new ServerPacket(0x63);
                     response.WriteByte((byte)0x01);
                     response.WriteString8(user.Name);
                     response.WriteByte(0);
@@ -3063,14 +3055,12 @@ namespace Hybrasyl
                 }
                 else
                 {
-                    Logger.ErrorFormat(String.Format("{0}: sent us a click to a non-existent map point!",
-                        user.Name));
+                    Logger.ErrorFormat($"{user.Name}: sent us a click to a non-existent map point!");
                 }
             }
             else
             {
-                Logger.ErrorFormat(String.Format("{0}: sent us an 0x3F outside of a map screen!",
-                    user.Name));
+                Logger.ErrorFormat($"{user.Name}: sent us an 0x3F outside of a map screen!");
             }
 
         }
@@ -3113,7 +3103,7 @@ namespace Hybrasyl
             {
                 // Are we handling a global sequence?
                 DialogSequence pursuit;
-                VisibleObject clickTarget = wobj as VisibleObject;
+                var clickTarget = wobj as VisibleObject;
 
                 if (pursuitId < Constants.DIALOG_SEQUENCE_SHARED)
                 {
@@ -3226,7 +3216,7 @@ namespace Hybrasyl
 
             if (user.World.Objects.TryGetValue(objectID, out wobj))
             {
-                VisibleObject clickTarget = wobj as VisibleObject;
+                var clickTarget = wobj as VisibleObject;
                 // Was the previous button clicked? Handle that first
                 if (pursuitIndex == user.DialogState.CurrentPursuitIndex - 1)
                 {
@@ -3288,7 +3278,7 @@ namespace Hybrasyl
         {
             var user = (User) obj;
             var clickType = packet.ReadByte();
-            Rectangle commonViewport = user.GetViewport();
+            var commonViewport = user.GetViewport();
             // User has clicked an X,Y point
             if (clickType == 3)
             {
@@ -3323,14 +3313,14 @@ namespace Hybrasyl
                 var entityId = packet.ReadUInt32();
                 Logger.DebugFormat("User {0} clicked ID {1}: ", user.Name, entityId);
 
-                WorldObject clickTarget = new WorldObject();
+                var clickTarget = new WorldObject();
 
                 if (user.World.Objects.TryGetValue(entityId, out clickTarget))
                 {
                     if (clickTarget is User || clickTarget is Merchant)
                     {
-                        Type type = clickTarget.GetType();
-                        MethodInfo methodInfo = type.GetMethod("OnClick");
+                        var type = clickTarget.GetType();
+                        var methodInfo = type.GetMethod("OnClick");
                         methodInfo.Invoke(clickTarget, new[] {user});
                     }
                 }
@@ -3602,7 +3592,7 @@ namespace Hybrasyl
 
         private void MerchantMenuHandler_BuyItem(User user, Merchant merchant, ClientPacket packet)
         {
-            string name = packet.ReadString8();
+            var name = packet.ReadString8();
 
             if (!merchant.Inventory.ContainsKey(name))
             {
@@ -3648,8 +3638,8 @@ namespace Hybrasyl
 
         private void MerchantMenuHandler_BuyItemWithQuantity(User user, Merchant merchant, ClientPacket packet)
         {
-            string name = packet.ReadString8();
-            string qStr = packet.ReadString8();
+            var name = packet.ReadString8();
+            var qStr = packet.ReadString8();
 
 
             if (!merchant.Inventory.ContainsKey(name))
@@ -3669,7 +3659,7 @@ namespace Hybrasyl
                 return;
             }
 
-            uint cost = (uint) (template.Properties.Physical.Value*quantity);
+            var cost = (uint) (template.Properties.Physical.Value*quantity);
 
             if (user.Gold < cost)
             {
@@ -3679,17 +3669,17 @@ namespace Hybrasyl
 
             if (quantity > template.Properties.Stackable.Max)
             {
-                user.ShowMerchantGoBack(merchant, string.Format("You cannot hold that many {0}.", name),
+                user.ShowMerchantGoBack(merchant, $"You cannot hold that many {name}.",
                     MerchantMenuItem.BuyItemMenu);
                 return;
             }
 
             if (user.Inventory.Contains(name))
             {
-                byte slot = user.Inventory.SlotOf(name);
+                var slot = user.Inventory.SlotOf(name);
                 if (user.Inventory[slot].Count + quantity > template.Properties.Stackable.Max)
                 {
-                    user.ShowMerchantGoBack(merchant, string.Format("You cannot hold that many {0}.", name),
+                    user.ShowMerchantGoBack(merchant, $"You cannot hold that many {name}.",
                         MerchantMenuItem.BuyItemMenu);
                     return;
                 }
@@ -3715,7 +3705,7 @@ namespace Hybrasyl
 
         private void MerchantMenuHandler_SellItem(User user, Merchant merchant, ClientPacket packet)
         {
-            byte slot = packet.ReadByte();
+            var slot = packet.ReadByte();
 
             var item = user.Inventory[slot];
             if (item == null) return;
@@ -3738,8 +3728,8 @@ namespace Hybrasyl
         private void MerchantMenuHandler_SellItemWithQuantity(User user, Merchant merchant, ClientPacket packet)
         {
             packet.ReadByte();
-            byte slot = packet.ReadByte();
-            string qStr = packet.ReadString8();
+            var slot = packet.ReadByte();
+            var qStr = packet.ReadString8();
 
             int quantity;
             if (!int.TryParse(qStr, out quantity) || quantity < 1)
@@ -3769,8 +3759,8 @@ namespace Hybrasyl
         private void MerchantMenuHandler_SellItemConfirmation(User user, Merchant merchant, ClientPacket packet)
         {
             packet.ReadByte();
-            byte slot = packet.ReadByte();
-            byte quantity = packet.ReadByte();
+            var slot = packet.ReadByte();
+            var quantity = packet.ReadByte();
 
             var item = user.Inventory[slot];
             if (item == null) return;
@@ -3787,7 +3777,7 @@ namespace Hybrasyl
                 return;
             }
 
-            uint profit = (uint) (Math.Round(item.Value*0.50)*quantity);
+            var profit = (uint) (Math.Round(item.Value*0.50)*quantity);
 
             if (item.Stackable && quantity < item.Count)
                 user.DecreaseItem(slot, quantity);
@@ -3859,16 +3849,16 @@ namespace Hybrasyl
 
         public bool TryGetItemTemplate(string name, Sex itemSex, out XSD.ItemType item)
         {
-            var itemKey = new Tuple<Sex, String>(itemSex, name);
+            var itemKey = new Tuple<Sex, string>(itemSex, name);
             return ItemCatalog.TryGetValue(itemKey, out item);
         }
 
         public bool TryGetItemTemplate(string name, out XSD.ItemType item)
         {
             // This is kinda gross
-            var neutralKey = new Tuple<Sex, String>(Sex.Neutral, name);
-            var femaleKey = new Tuple<Sex, String>(Sex.Female, name);
-            var maleKey = new Tuple<Sex, String>(Sex.Male, name);
+            var neutralKey = new Tuple<Sex, string>(Sex.Neutral, name);
+            var femaleKey = new Tuple<Sex, string>(Sex.Female, name);
+            var maleKey = new Tuple<Sex, string>(Sex.Male, name);
 
             return ItemCatalog.TryGetValue(neutralKey, out item) || ItemCatalog.TryGetValue(femaleKey, out item) || ItemCatalog.TryGetValue(maleKey, out item);
         }

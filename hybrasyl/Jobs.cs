@@ -73,7 +73,7 @@ namespace Hybrasyl
 
             public static readonly int Interval = 300;
 
-            public static void Execute(Object obj, ElapsedEventArgs args)
+            public static void Execute(object obj, ElapsedEventArgs args)
             {
                 try
                 {
@@ -105,7 +105,7 @@ namespace Hybrasyl
             // Clean up mailboxes once an hour
             public static readonly int Interval = 3600;
 
-            public static void Execute(Object obj, ElapsedEventArgs args)
+            public static void Execute(object obj, ElapsedEventArgs args)
             {
                 try
                 {
@@ -155,7 +155,7 @@ namespace Hybrasyl
 
             public static readonly int Interval = 60;
 
-            public static void Execute(Object obj, ElapsedEventArgs args)
+            public static void Execute(object obj, ElapsedEventArgs args)
             {
                 try
                 {
@@ -183,7 +183,7 @@ namespace Hybrasyl
 
             public static readonly int Interval = Constants.BYTE_HEARTBEAT_INTERVAL;
 
-            public static void Execute(Object obj, ElapsedEventArgs args)
+            public static void Execute(object obj, ElapsedEventArgs args)
             {
                 try
                 {
@@ -212,7 +212,7 @@ namespace Hybrasyl
 
             public static readonly int Interval = Constants.TICK_HEARTBEAT_INTERVAL;
 
-            public static void Execute(Object obj, ElapsedEventArgs args)
+            public static void Execute(object obj, ElapsedEventArgs args)
             {
                 try
                 {
@@ -244,7 +244,7 @@ namespace Hybrasyl
 
             public static readonly int Interval = Constants.REAP_HEARTBEAT_INTERVAL;
 
-            public static void Execute(Object obj, ElapsedEventArgs args)
+            public static void Execute(object obj, ElapsedEventArgs args)
             {
                 Logger.Debug("Job starting");
                 try
@@ -281,7 +281,7 @@ namespace Hybrasyl
 
             public static readonly int Interval = 25;
 
-            public static void Execute(Object obj, ElapsedEventArgs args)
+            public static void Execute(object obj, ElapsedEventArgs args)
             {
                 foreach (var connId in GlobalConnectionManifest.WorldClients.Keys)
                 {
@@ -297,7 +297,7 @@ namespace Hybrasyl
 
             public static readonly int Interval = 10;
 
-            public static void Execute(Object obj, ElapsedEventArgs args)
+            public static void Execute(object obj, ElapsedEventArgs args)
             {
                 Logger.Debug("Job starting");
                 try
@@ -308,19 +308,17 @@ namespace Hybrasyl
                         var client = connection.Value;
                         var connectionId = connection.Key;
 
-                        if (client.IsIdle())
+                        if (!client.IsIdle()) continue;
+                        User user;
+                        if (World.ActiveUsers.TryGetValue(connectionId, out user))
                         {
-                            User user;
-                            if (World.ActiveUsers.TryGetValue(connectionId, out user))
-                            {
-                                user.Motion(16, 120); // send snore effect
-                            }
-                            else
-                            {
-                                Logger.WarnFormat(
-                                    "Connection id {0} marked as idle but no corresponding user found...?",
-                                    connectionId);
-                            }
+                            user.Motion(16, 120); // send snore effect
+                        }
+                        else
+                        {
+                            Logger.WarnFormat(
+                                "Connection id {0} marked as idle but no corresponding user found...?",
+                                connectionId);
                         }
                     }
 

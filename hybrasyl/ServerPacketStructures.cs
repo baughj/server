@@ -1,9 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Hybrasyl.Enums;
+﻿/*
+ * This file is part of Project Hybrasyl.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the Affero General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * without ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the Affero General Public License
+ * for more details.
+ *
+ * You should have received a copy of the Affero General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * (C) 2016 Project Hybrasyl (info@hybrasyl.com)
+ *
+ * Authors:   Michael Norris <norrismiv@gmail.com>
+ *
+ */
+ 
+ using System;
+ using Hybrasyl.Enums;
 
 namespace Hybrasyl
 {
@@ -38,8 +55,8 @@ namespace Hybrasyl
 
             internal ServerPacket Packet()
             {
-                ServerPacket packet = new ServerPacket(OpCode);
-                Console.WriteLine(String.Format("uid: {0}, Animation: {1}, speed {2}", UserId, Animation, Speed));
+                var packet = new ServerPacket(OpCode);
+                Console.WriteLine($"uid: {UserId}, Animation: {Animation}, speed {Speed}");
                 packet.WriteUInt32(UserId);
                 packet.WriteByte(Animation);
                 packet.WriteUInt16(Speed);
@@ -62,8 +79,8 @@ namespace Hybrasyl
 
             internal ServerPacket Packet()
             {
-                ServerPacket packet = new ServerPacket(OpCode);
-                Console.WriteLine(String.Format("sound: {0}", Sound));
+                var packet = new ServerPacket(OpCode);
+                Console.WriteLine($"sound: {Sound}");
                 packet.WriteByte(Sound);
                 return packet;
             }
@@ -84,7 +101,7 @@ namespace Hybrasyl
 
             internal ServerPacket Packet()
             {
-                ServerPacket packet = new ServerPacket(OpCode);
+                var packet = new ServerPacket(OpCode);
                 packet.WriteUInt32(ObjId);
                 packet.WriteByte(0);
                 packet.WriteByte(CurrentPercent);

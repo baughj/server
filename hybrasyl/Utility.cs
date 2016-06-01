@@ -20,13 +20,11 @@
  *            Kyle Speck    <kojasou@hybrasyl.com>
  */
 
-using System.IO;
 using log4net;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 
 namespace Hybrasyl
@@ -149,7 +147,7 @@ namespace Hybrasyl
             ClearExpiredSquelches();
 
             if (obj == null)
-                obj = String.Empty;
+                obj = string.Empty;
 
             if (SquelchedObjects.ContainsValue(obj))
                 return true;
@@ -205,7 +203,7 @@ namespace Hybrasyl
             else
             {
                 throw new ArgumentException(
-                    String.Format("Can't throttle opcode {0} as it doesn't exist in PACKET_THROTTLES constant!", opcode));
+                    $"Can't throttle opcode {opcode} as it doesn't exist in PACKET_THROTTLES constant!");
             }
         }
 
@@ -518,8 +516,8 @@ namespace Hybrasyl
             {
                 get
                 {
-                    string result = string.Empty;
-                    Version version = Assembly.GetName().Version;
+                    var result = string.Empty;
+                    var version = Assembly.GetName().Version;
                     if (version != null)
                         return version.ToString();
                     return "1.3.3.7";
@@ -534,7 +532,7 @@ namespace Hybrasyl
             protected string GetAttributeValue<TAttr>(Func<TAttr,
                 string> resolveFunc, string defaultResult = null) where TAttr : Attribute
             {
-                object[] attributes = Assembly.GetCustomAttributes(typeof(TAttr), false);
+                var attributes = Assembly.GetCustomAttributes(typeof(TAttr), false);
                 if (attributes.Length > 0)
                     return resolveFunc((TAttr)attributes[0]);
                 else
@@ -560,8 +558,8 @@ namespace Hybrasyl
                 {
                     foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(obj))
                     {
-                        string name = descriptor.Name;
-                        object value = descriptor.GetValue(obj);
+                        var name = descriptor.Name;
+                        var value = descriptor.GetValue(obj);
                         Logger.DebugFormat("{0} = {1}", name, value);
                     }
                 }

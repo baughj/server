@@ -22,8 +22,6 @@
 
 using C3;
 using Hybrasyl.Objects;
-using Hybrasyl.Properties;
-using Hybrasyl.XML;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -32,9 +30,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Xml;
-using log4net.Appender;
-using Hybrasyl.XSD;
 
 namespace Hybrasyl.Properties
 {
@@ -52,7 +47,7 @@ namespace Hybrasyl
     {
         public static readonly ILog Logger = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        public Int64 Id
+        public long Id
         {
             get
             {
@@ -358,10 +353,10 @@ namespace Hybrasyl
                 RawData = File.ReadAllBytes(filename);
                 Checksum = Crc16.Calculate(RawData);
 
-                int index = 0;
-                for (int y = 0; y < Y; ++y)
+                var index = 0;
+                for (var y = 0; y < Y; ++y)
                 {
-                    for (int x = 0; x < X; ++x)
+                    for (var x = 0; x < X; ++x)
                     {
                         var bg = RawData[index++] | RawData[index++] << 8;
                         var lfg = RawData[index++] | RawData[index++] << 8;
@@ -377,8 +372,8 @@ namespace Hybrasyl
                             IsWall[x, y] = true;
                         }
 
-                        ushort lfgu = (ushort)lfg;
-                        ushort rfgu = (ushort)rfg;
+                        var lfgu = (ushort)lfg;
+                        var rfgu = (ushort)rfg;
 
                         if (Game.DoorSprites.ContainsKey(lfgu))
                         {
@@ -410,39 +405,36 @@ namespace Hybrasyl
 
         public void Insert(VisibleObject obj, byte x, byte y, bool updateClient = true)
         {
-            if (Objects.Add(obj))
+            if (!Objects.Add(obj)) return;
+            obj.Map = this;
+            obj.X = x;
+            obj.Y = y;
+
+            EntityTree.Add(obj);
+
+            var user = obj as User;
+            if (user != null)
             {
-                obj.Map = this;
-                obj.X = x;
-                obj.Y = y;
-
-                EntityTree.Add(obj);
-
-                var user = obj as User;
-                if (user != null)
+                if (updateClient)
                 {
-                    if (updateClient)
-                    {
-                        obj.SendMapInfo();
-                        obj.SendLocation();
-                    }
-                    Users.Add(user.Name, user);
+                    obj.SendMapInfo();
+                    obj.SendLocation();
                 }
+                Users.Add(user.Name, user);
+            }
 
-                var value = obj as Objects.Reactor;
-                if (value != null)
-                {
-                    Reactors.Add(new Tuple<byte, byte>((byte)x,(byte)y), value);
-                }
+            var value = obj as Objects.Reactor;
+            if (value != null)
+            {
+                Reactors.Add(new Tuple<byte, byte>((byte)x,(byte)y), value);
+            }
 
-                var affectedObjects = EntityTree.GetObjects(obj.GetViewport());
+            var affectedObjects = EntityTree.GetObjects(obj.GetViewport());
 
-                foreach (var target in affectedObjects)
-                {
-                    target.AoiEntry(obj);
-                    obj.AoiEntry(target);
-                }
-
+            foreach (var target in affectedObjects)
+            {
+                target.AoiEntry(obj);
+                obj.AoiEntry(target);
             }
         }
 
@@ -477,18 +469,14 @@ namespace Hybrasyl
 
             var updateViewport = GetViewport(x, y);
 
-            foreach (var obj in EntityTree.GetObjects(updateViewport))
+            foreach (var user in EntityTree.GetObjects(updateViewport).OfType<User>().Select(obj => obj as User))
             {
-                if (obj is User)
-                {
-                    var user = obj as User;
-                    Logger.DebugFormat("Sending door packet to {0}: X {1}, Y {2}, Open {3}, LR {4}",
-                        user.Name, x, y, Doors[coords].Closed,
-                        Doors[coords].IsLeftRight);
+                Logger.DebugFormat("Sending door packet to {0}: X {1}, Y {2}, Open {3}, LR {4}",
+                    user.Name, x, y, Doors[coords].Closed,
+                    Doors[coords].IsLeftRight);
 
-                    user.SendDoorUpdate(x, y, Doors[coords].Closed,
-                        Doors[coords].IsLeftRight);
-                }
+                user.SendDoorUpdate(x, y, Doors[coords].Closed,
+                    Doors[coords].IsLeftRight);
             }
         }
 
@@ -648,29 +636,21 @@ namespace Hybrasyl
 
         public void NotifyNearbyAoiEntry(VisibleObject objectToAdd)
         {
-            foreach (var obj in EntityTree.GetObjects(objectToAdd.GetViewport()))
+            foreach (User obj in EntityTree.GetObjects(objectToAdd.GetViewport()).OfType<User>())
             {
-                if (obj is User)
-                {
-                    Logger.DebugFormat("Notifying {0} of object {1} at {2},{3} with sprite {4}", obj.Name, objectToAdd.Name,
-                        objectToAdd.X, objectToAdd.Y, objectToAdd.Sprite);
-                    var user = obj as User;
-                    user.AoiEntry(objectToAdd);
-                }
+                Logger.DebugFormat("Notifying {0} of object {1} at {2},{3} with sprite {4}", obj.Name, objectToAdd.Name,
+                    objectToAdd.X, objectToAdd.Y, objectToAdd.Sprite);
+                var user = obj as User;
+                user.AoiEntry(objectToAdd);
             }
         }
 
         public void NotifyNearbyAoiDeparture(VisibleObject objectToRemove)
         {
-            foreach (var obj in EntityTree.GetObjects(objectToRemove.GetViewport()))
+            foreach (var user in EntityTree.GetObjects(objectToRemove.GetViewport()).OfType<User>().Select(obj => obj as User))
             {
-                if (obj is User)
-                {
-                    var user = obj as User;
-                    user.AoiDeparture(objectToRemove);
-                }
+                user.AoiDeparture(objectToRemove);
             }
-
         }
 
         public bool IsValidPoint(short x, short y)

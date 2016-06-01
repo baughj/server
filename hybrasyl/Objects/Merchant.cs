@@ -20,8 +20,6 @@
  *            Kyle Speck    <kojasou@hybrasyl.com>
  */
 
-using Hybrasyl.Enums;
-using Hybrasyl.Properties;
 using System;
 using System.Collections.Generic;
 
@@ -68,50 +66,39 @@ namespace Hybrasyl.Objects
             if (!Ready)
                 OnSpawn();
 
-            if (Script != null)
-            {
-                Script.ExecuteScriptableFunction("OnClick", new HybrasylUser(invoker));
-            }
+            Script?.ExecuteScriptableFunction("OnClick", new HybrasylUser(invoker));
         }
 
         public override void AoiEntry(VisibleObject obj)
         {
-            if (Script != null)
-            {
-                Script.ExecuteScriptableFunction("OnEntry", new HybrasylWorldObject(obj));
-            }
+            Script?.ExecuteScriptableFunction("OnEntry", new HybrasylWorldObject(obj));
         }
 
         public override void AoiDeparture(VisibleObject obj)
         {
-            if (Script != null)
-            {
-                Script.ExecuteScriptableFunction("OnLeave", new HybrasylWorldObject(obj));
-            }
+            Script?.ExecuteScriptableFunction("OnLeave", new HybrasylWorldObject(obj));
         }
 
         public override void ShowTo(VisibleObject obj)
         {
-            if (obj is User)
-            {
-                var user = obj as User;
-                var npcPacket = new ServerPacket(0x07);
-                npcPacket.WriteUInt16(0x01); // Number of mobs in this packet
-                npcPacket.WriteUInt16(X);
-                npcPacket.WriteUInt16(Y);
-                npcPacket.WriteUInt32(Id);
-                npcPacket.WriteUInt16((ushort)(Sprite + 0x4000));
-                npcPacket.WriteByte(0);
-                npcPacket.WriteByte(0);
-                npcPacket.WriteByte(0);
-                npcPacket.WriteByte(0);
-                npcPacket.WriteByte((byte)Direction);
-                npcPacket.WriteByte(0);
+            if (!(obj is User)) return;
+            var user = obj as User;
+            var npcPacket = new ServerPacket(0x07);
+            npcPacket.WriteUInt16(0x01); // Number of mobs in this packet
+            npcPacket.WriteUInt16(X);
+            npcPacket.WriteUInt16(Y);
+            npcPacket.WriteUInt32(Id);
+            npcPacket.WriteUInt16((ushort)(Sprite + 0x4000));
+            npcPacket.WriteByte(0);
+            npcPacket.WriteByte(0);
+            npcPacket.WriteByte(0);
+            npcPacket.WriteByte(0);
+            npcPacket.WriteByte((byte)Direction);
+            npcPacket.WriteByte(0);
 
-                npcPacket.WriteByte(2); // Dot color. 0 = monster, 1 = nonsolid monster, 2=NPC
-                npcPacket.WriteString8(Name);
-                user.Enqueue(npcPacket);
-            }
+            npcPacket.WriteByte(2); // Dot color. 0 = monster, 1 = nonsolid monster, 2=NPC
+            npcPacket.WriteString8(Name);
+            user.Enqueue(npcPacket);
         }
     }
 

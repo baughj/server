@@ -110,16 +110,16 @@ namespace Hybrasyl
             Console.Write("Enter the World Port (default is 2612): ");
             var worldPort = Console.ReadLine();
 
-            if (String.IsNullOrEmpty(serverIp))
+            if (string.IsNullOrEmpty(serverIp))
                 serverIp = "127.0.0.1";
 
-            if (String.IsNullOrEmpty(lobbyPort))
+            if (string.IsNullOrEmpty(lobbyPort))
                 lobbyPort = "2610";
 
-            if (String.IsNullOrEmpty(loginPort))
+            if (string.IsNullOrEmpty(loginPort))
                 loginPort = "2611";
 
-            if (String.IsNullOrEmpty(worldPort))
+            if (string.IsNullOrEmpty(worldPort))
                 worldPort = "2612";
 
             Config.Network.Lobby.Bindaddress = serverIp;
@@ -285,8 +285,8 @@ namespace Hybrasyl
             }
             else
             {
-                stream = new MemoryStream(Encoding.GetEncoding(949).GetBytes(String.Format("Welcome to Hybrasyl!\n\nThis is Hybrasyl (version {0}).\n\nFor more information please visit http://www.hybrasyl.com",
-                    Assemblyinfo.Version)));
+                stream = new MemoryStream(Encoding.GetEncoding(949).GetBytes(
+                    $"Welcome to Hybrasyl!\n\nThis is Hybrasyl (version {Assemblyinfo.Version}).\n\nFor more information please visit http://www.hybrasyl.com"));
             }
 
             var notification = stream.ToArray();
@@ -510,9 +510,9 @@ namespace Hybrasyl
         {
             byte valueA = 0, valueB = 0;
 
-            for (int i = 0; i < buffer.Length; i += 6)
+            for (var i = 0; i < buffer.Length; i += 6)
             {
-                for (int ix = 0; ix < 6; ix++)
+                for (var ix = 0; ix < 6; ix++)
                 {
                     byte[] table;
 
@@ -521,13 +521,13 @@ namespace Hybrasyl
                     else
                         table = crcTable1;
 
-                    int valueC = valueB << 1;
+                    var valueC = valueB << 1;
                     valueB = (byte)(valueA ^ table[valueC++ % 256]);
                     valueA = (byte)(buffer[i + ix] ^ table[valueC % 256]);
                 }
             }
 
-            byte[] ret = new byte[] { valueA, valueB };
+            var ret = new byte[] { valueA, valueB };
             Array.Reverse(ret);
             return BitConverter.ToUInt16(ret, 0);
         }
@@ -574,9 +574,9 @@ namespace Hybrasyl
 
         public static uint Calculate(byte[] data)
         {
-            uint crc = 0xFFFFFFFF;
-            int pos = 0;
-            int i = data.Length;
+            var crc = 0xFFFFFFFF;
+            var pos = 0;
+            var i = data.Length;
 
             while (i != 0)
             {
@@ -597,7 +597,7 @@ namespace Hybrasyl
             using (var outZStream = new ZOutputStream(output, zlibConst.Z_DEFAULT_COMPRESSION))
             {
                 input.Seek(0, SeekOrigin.Begin);
-                byte[] buffer = new byte[2000];
+                var buffer = new byte[2000];
                 int len;
                 while ((len = input.Read(buffer, 0, 2000)) > 0)
                 {
@@ -615,7 +615,7 @@ namespace Hybrasyl
             using (var outZStream = new ZOutputStream(output))
             {
                 input.Seek(0, SeekOrigin.Begin);
-                byte[] buffer = new byte[2000];
+                var buffer = new byte[2000];
                 int len;
                 while ((len = input.Read(buffer, 0, 2000)) > 0)
                 {

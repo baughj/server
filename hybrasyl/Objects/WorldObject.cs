@@ -76,19 +76,19 @@ namespace Hybrasyl.Objects
         public Map Map { get; set; }
         public Direction Direction { get; set; }
         public ushort Sprite { get; set; }
-        public String Portrait { get; set; }
+        public string Portrait { get; set; }
         public string DisplayText { get; set; }
 
         public List<DialogSequence> Pursuits;
         public List<DialogSequence> DialogSequences;
-        public Dictionary<String, DialogSequence> SequenceCatalog;
+        public Dictionary<string, DialogSequence> SequenceCatalog;
 
         public VisibleObject()
         {
             Pursuits = new List<DialogSequence>();
             DialogSequences = new List<DialogSequence>();
-            SequenceCatalog = new Dictionary<String, DialogSequence>();
-            DisplayText = String.Empty;
+            SequenceCatalog = new Dictionary<string, DialogSequence>();
+            DisplayText = string.Empty;
         }
 
         public virtual void AoiEntry(VisibleObject obj)
@@ -231,16 +231,14 @@ namespace Hybrasyl.Objects
         {
             foreach (var obj in Map.EntityTree.GetObjects(GetShoutViewport()))
             {
-                if (obj is User)
-                {
-                    var user = obj as User;
-                    var x0D = new ServerPacket(0x0D);
-                    x0D.WriteByte(0x01);
-                    x0D.WriteUInt32(Id);
-                    x0D.WriteString8($"{Name}! {message}");
+                if (!(obj is User)) continue;
+                var user = obj as User;
+                var x0D = new ServerPacket(0x0D);
+                x0D.WriteByte(0x01);
+                x0D.WriteUInt32(Id);
+                x0D.WriteString8($"{Name}! {message}");
 
-                    user.Enqueue(x0D);
-                }
+                user.Enqueue(x0D);
             }
         }
 
@@ -773,13 +771,9 @@ namespace Hybrasyl.Objects
 
         public virtual void Motion(byte motion, short speed)
         {
-            foreach (var obj in Map.EntityTree.GetObjects(GetViewport()))
+            foreach (var user in Map.EntityTree.GetObjects(GetViewport()).OfType<User>().Select(obj => obj as User))
             {
-                if (obj is User)
-                {
-                    var user = obj as User;
-                    user.SendMotion(Id, motion, speed);
-                }
+                user.SendMotion(Id, motion, speed);
             }
         }
 
@@ -897,11 +891,9 @@ namespace Hybrasyl.Objects
 
         public override void ShowTo(VisibleObject obj)
         {
-            if (obj is User)
-            {
-                var user = obj as User;
-                user.SendVisibleCreature(this);
-            }
+            if (!(obj is User)) return;
+            var user = obj as User;
+            user.SendVisibleCreature(this);
         }
 
         public bool IsIdle()

@@ -1,4 +1,26 @@
-using Hybrasyl.XSD;
+/*
+ * This file is part of Project Hybrasyl.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the Affero General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * without ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the Affero General Public License
+ * for more details.
+ *
+ * You should have received a copy of the Affero General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * (C) 2013 Justin Baugh (baughj@hybrasyl.com)
+ * (C) 2015 Project Hybrasyl (info@hybrasyl.com)
+ *
+ * Authors:   Kyle Speck <kojasou@gmail.com>
+ *
+ */
+ 
+ using Hybrasyl.XSD;
 using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -6,8 +28,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Hybrasyl
 {
@@ -20,7 +40,7 @@ namespace Hybrasyl
             var output = new object[book.Size];
             for (byte i = 0; i < book.Size; i++)
             {
-                var itemInfo = new Dictionary<String, object>();
+                var itemInfo = new Dictionary<string, object>();
                 if (book[i] != null)
                 {
                     itemInfo["Name"] = book[i].Name;
@@ -28,14 +48,14 @@ namespace Hybrasyl
                     output[i] = itemInfo;
                 }
             }
-            Newtonsoft.Json.Linq.JArray ja = Newtonsoft.Json.Linq.JArray.FromObject(output);
+            var ja = Newtonsoft.Json.Linq.JArray.FromObject(output);
             serializer.Serialize(writer, ja);
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            JArray jArray = JArray.Load(reader);
-            Book book = new Book(jArray.Count);
+            var jArray = JArray.Load(reader);
+            var book = new Book(jArray.Count);
 
             for (byte i = 0; i < jArray.Count; i++)
             {
@@ -72,14 +92,9 @@ namespace Hybrasyl
         private Dictionary<int, Castable> _itemIndex;
         public static readonly ILog Logger = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        public bool IsFull
-        {
-            get { return Count == Size; }
-        }
-        public int EmptySlots
-        {
-            get { return Size - Count; }
-        }
+        public bool IsFull => Count == Size;
+
+        public int EmptySlots => Size - Count;
         public int Size { get; private set; }
         public int Count { get; private set; }
 
@@ -95,7 +110,7 @@ namespace Hybrasyl
             }
             internal set
             {
-                int index = slot - 1;
+                var index = slot - 1;
                 if (index < 0 || index >= Size)
                     return;
                 if (value == null)
@@ -113,11 +128,9 @@ namespace Hybrasyl
 
         private void _RemoveFromIndex(Castable item)
         {
-            if (item != null)
-            {
-                if (_itemIndex.Keys.Contains(item.Id))
-                    _itemIndex.Remove(item.Id);
-            }
+            if (item == null) return;
+            if (_itemIndex.Keys.Contains(item.Id))
+                _itemIndex.Remove(item.Id);
         }
 
         public Book(int size)

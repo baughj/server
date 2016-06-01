@@ -76,7 +76,7 @@ namespace Hybrasyl
 
                 foreach (var member in Members)
                 {
-                    member.SendMessage(String.Format("{0} is in another group.", user.Name), MessageTypes.SYSTEM);
+                    member.SendMessage($"{user.Name} is in another group.", MessageTypes.SYSTEM);
                 }
 
                 // If this fails when the group only contains one other person, the group should be abandoned.
@@ -129,10 +129,7 @@ namespace Hybrasyl
             }
         }
 
-        public int Count
-        {
-            get { return Members.Count; }
-        }
+        public int Count => Members.Count;
 
         public bool ContainsAllClasses()
         {
@@ -150,15 +147,11 @@ namespace Hybrasyl
          */
         private bool WithinRange(User user, User target)
         {
-            if (user.Map.Id == target.Map.Id)
-            {
-                int xDelta = Math.Abs(user.Map.X - target.Map.X);
-                int yDelta = Math.Abs(user.Map.Y - target.Map.Y);
+            if (user.Map.Id != target.Map.Id) return false;
+            var xDelta = Math.Abs(user.Map.X - target.Map.X);
+            var yDelta = Math.Abs(user.Map.Y - target.Map.Y);
 
-                return (xDelta + yDelta < Constants.GROUP_SHARING_DISTANCE);
-            }
-
-            return false;
+            return (xDelta + yDelta < Constants.GROUP_SHARING_DISTANCE);
         }
 
         /**
@@ -166,12 +159,12 @@ namespace Hybrasyl
          */
         public void ShareExperience(User source, int experience)
         {
-            Dictionary<uint, int> share = ExperienceDistributionFunc(source, experience);
+            var share = ExperienceDistributionFunc(source, experience);
 
-            for (int i = 0; i < Members.Count; i++)
+            foreach (User member in Members)
             {
                 // Note: this will only work for positive numbers at this point.
-                Members[i].GiveExperience((uint)share[Members[i].Id]);
+                member.GiveExperience((uint)share[member.Id]);
             }
         }
 
@@ -188,7 +181,7 @@ namespace Hybrasyl
          */
         private Dictionary<uint, int> Distribution_Full(User source, int full)
         {
-            Dictionary<uint, int> share = new Dictionary<uint, int>();
+            var share = new Dictionary<uint, int>();
 
             foreach (var member in Members)
             {
