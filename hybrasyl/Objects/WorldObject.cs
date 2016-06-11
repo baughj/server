@@ -854,7 +854,7 @@ namespace Hybrasyl.Objects
                 damage = (damage - reduction) * resist;
             }
 
-            if (attacker == null)
+            if (attacker != null)
                 _mLastHitter = attacker.Id;
 
             var normalized = (uint)damage;

@@ -7,6 +7,11 @@ using Hybrasyl.Enums;
 
 namespace Hybrasyl
 {
+
+    internal interface IPacket
+    {
+        ServerPacket ToPacket();
+    }
     //This is a POC. Nothing to see here folks.
 
     internal class ServerPacketStructures
@@ -22,6 +27,44 @@ namespace Hybrasyl
 
             internal byte Slot { get; set; }
         }
+
+        internal partial class StatusBar
+        {
+            private static byte OpCode = OpCodes.StatusBar;
+
+            internal ushort Icon;
+            internal StatusBarColor BarColor;
+
+            internal ServerPacket Packet()
+            {
+                ServerPacket packet = new ServerPacket(OpCode);
+                packet.WriteUInt16(Icon);
+                packet.WriteByte((byte)BarColor);
+                return packet;
+            }
+        }
+
+
+        internal partial class Cooldown
+        {
+            private static byte OpCode = OpCodes.Cooldown;
+
+            internal byte Pane;
+            internal byte Slot;
+            internal uint Length;
+
+            internal ServerPacket Packet()
+            {
+                ServerPacket packet = new ServerPacket(OpCode);
+                packet.WriteByte(Pane);
+                packet.WriteByte(Slot);
+                packet.WriteUInt32(Length);
+
+                return packet;
+            }
+
+        }
+
 
         internal partial class PlayerAnimation
         {
