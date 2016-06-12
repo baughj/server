@@ -206,6 +206,7 @@ namespace Hybrasyl.Objects
         public bool Tailorable => Template.Properties.Flags.HasFlag(XSD.ItemFlags.tailorable);
 
         public bool Smithable => Template.Properties.Flags.HasFlag(XSD.ItemFlags.smithable);
+        public bool Perishable => Template.Properties.Physical.Perishable;
 
         public bool Exchangeable => Template.Properties.Flags.HasFlag(XSD.ItemFlags.exchangeable);
 
