@@ -33,6 +33,7 @@ using System.Text.RegularExpressions;
 
 namespace Hybrasyl.Objects
 {
+    
     public class Item : VisibleObject
     {
         public int TemplateId { get; private set; }
@@ -285,12 +286,13 @@ namespace Hybrasyl.Objects
             }
         }
 
+
         public Item(int id, World world)
         {
             World = world;
             TemplateId = id;
-            Durability = MaximumDurability;
-            Count = 1;
+            Durability = MaximumDurability == 0 ? 100 : MaximumDurability;
+            Count = 1;          
         }
 
         // Simple copy constructor for an item, mostly used when we split a stack and it results

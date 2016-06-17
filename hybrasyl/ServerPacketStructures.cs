@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Hybrasyl.Enums;
+using log4net;
 
 namespace Hybrasyl
 {
@@ -17,6 +18,10 @@ namespace Hybrasyl
 
     internal class ServerPacketStructures
     {
+
+        public new static readonly ILog Logger =
+               LogManager.GetLogger(
+               System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
         internal partial class UseSkill
         {
             private byte OpCode;
@@ -219,7 +224,7 @@ namespace Hybrasyl
             #region Location information
             internal byte X { get; set; }
             internal byte Y { get; set; }
-            internal byte Direction { get; set; }
+            internal Direction Direction { get; set; }
             internal uint Id { get; set; }
             #endregion
 
@@ -261,11 +266,12 @@ namespace Hybrasyl
             {
                 ServerPacket packet = new ServerPacket(OpCode);
                 packet.WriteUInt16(X);
-                packet.WriteByte(Y);
-                packet.WriteByte(Direction);
+                packet.WriteUInt16(Y);
+                packet.WriteByte((byte)Direction);
                 packet.WriteUInt32(Id);
                 packet.WriteUInt16(Helmet);
-                if (DisplayAsMonster)
+                Logger.InfoFormat($"Sex is {Sex}");
+                if (!DisplayAsMonster)
                 {
                     packet.WriteByte((byte) (((byte) Sex*16) + BodySpriteOffset));
                     packet.WriteUInt16(Armor);
@@ -278,13 +284,13 @@ namespace Hybrasyl
                     packet.WriteByte(FirstAccColor);
                     packet.WriteUInt16(FirstAcc);
                     packet.WriteByte(SecondAccColor);
-                    packet.WriteUInt16(SecondAcc););
+                    packet.WriteUInt16(SecondAcc);
                     packet.WriteByte(ThirdAccColor);
                     packet.WriteUInt16(ThirdAcc);
                     packet.WriteByte((byte)LanternSize);
                     packet.WriteByte((byte)RestPosition);
                     packet.WriteUInt16(Overcoat);
-                    packet.WriteUInt16(OvercoatColor);
+                    packet.WriteByte(OvercoatColor);
                     packet.WriteByte((byte)SkinColor);
                     packet.WriteBoolean(Invisible);
                     packet.WriteByte(FaceShape);
@@ -305,8 +311,6 @@ namespace Hybrasyl
                 packet.WriteByte((byte)NameStyle);
                 packet.WriteString8(Name ?? string.Empty);
                 packet.WriteString8(GroupName ?? string.Empty);
-
-
 
                 return packet;
             }
