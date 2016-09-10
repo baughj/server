@@ -1,8 +1,25 @@
-﻿
+﻿/*
+ * This file is part of Project Hybrasyl.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the Affero General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * without ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the Affero General Public License
+ * for more details.
+ *
+ * You should have received a copy of the Affero General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * (C) 2016 Project Hybrasyl (info@hybrasyl.com)
+ *
+ * Authors:   Justin Baugh  <baughj@hybrasyl.com>
+ * 
+ */
+
 using System;
-using System.Data.SqlTypes;
-using System.Windows.Forms;
-using Community.CsharpSqlite;
 using Hybrasyl.Enums;
 using Hybrasyl.Objects;
 
@@ -12,9 +29,9 @@ namespace Hybrasyl
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class ProhibitedCondition : System.Attribute
     {
-        public PlayerCondition Condition { get; set; }
+        public StatusFlags Condition { get; set; }
 
-        public ProhibitedCondition(PlayerCondition requirement)
+        public ProhibitedCondition(StatusFlags requirement)
         {
             Condition = requirement;
         }
@@ -23,10 +40,10 @@ namespace Hybrasyl
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class RequiredCondition : System.Attribute
     {
-        public PlayerCondition Condition { get; set; }
+        public StatusFlags Condition { get; set; }
         public string ErrorMessage { get; set; }
 
-        public RequiredCondition(PlayerCondition requirement)
+        public RequiredCondition(StatusFlags requirement)
         {
             Condition = requirement;
         }
@@ -41,11 +58,12 @@ namespace Hybrasyl
         string OnStartMessage { get; set; }
         string OnEndMessage { get; set; }
         string ActionProhibitedMessage { get; set; }
+        
         int Duration { get; set; }
         int Tick { get; set; }
         DateTime Start { get; }
         DateTime LastTick { get; }
-        Enums.PlayerCondition Conditions { get; set; }
+        Enums.StatusFlags Conditions { get; set; }
         ushort Icon { get; }
 
         bool Expired { get; }
@@ -66,8 +84,13 @@ namespace Hybrasyl
         public ushort Icon { get; }
         public int Tick { get; set; }
         public int Duration { get; set; }
-        protected User User { get; set; }
-        public Enums.PlayerCondition Conditions { get; set; }
+
+        protected Creature Target { get; set; }
+        protected Creature Caster { get; set; }
+        protected User TargetAsUser => Target as User;
+        protected User CasterAsUser => Caster as User;
+
+        public Enums.StatusFlags Conditions { get; set; }
 
         public DateTime Start { get; }
 
@@ -75,18 +98,21 @@ namespace Hybrasyl
 
         public virtual void OnStart()
         {
-            if (OnStartMessage != string.Empty) User.SendSystemMessage(OnStartMessage);
+            if (OnStartMessage != string.Empty) TargetAsUser?.SendSystemMessage(OnStartMessage);
+            TargetAsUser?.SendStatusUpdate(Icon, Remaining);
         }
 
         public virtual void OnTick()
         {
             LastTick = DateTime.Now;
-            if (OnTickMessage != string.Empty) User.SendSystemMessage(OnTickMessage);
+            if (OnTickMessage != string.Empty) TargetAsUser?.SendSystemMessage(OnTickMessage);
+            TargetAsUser?.SendStatusUpdate(Icon, Remaining);
         }
 
         public virtual void OnEnd()
         {
-            if (OnEndMessage != string.Empty) User.SendSystemMessage(OnEndMessage);
+            if (OnEndMessage != string.Empty) TargetAsUser?.SendSystemMessage(OnEndMessage);
+            TargetAsUser?.SendRemoveStatus(Icon);
         }
 
         public bool Expired => (DateTime.Now - Start).TotalSeconds >= Duration;
@@ -101,18 +127,30 @@ namespace Hybrasyl
         public string OnEndMessage { get; set; }
         public string ActionProhibitedMessage { get; set; }
 
-        protected PlayerStatus(User user, int duration, int tick, ushort icon, string name)
+        protected void _initStatus()
         {
-            User = user;
+            OnTickMessage = String.Empty;
+            OnStartMessage = String.Empty;
+            OnEndMessage = String.Empty;
+        }
+        protected PlayerStatus(Creature target, int duration, int tick, ushort icon, string name, Creature caster=null)
+        {
+            Caster = caster;
+            Target = target;
             Duration = duration;
             Tick = tick;
             Icon = icon;
             Name = name;
             Start = DateTime.Now;
-            OnTickMessage = String.Empty;
-            OnStartMessage = String.Empty;
-            OnEndMessage = String.Empty;
+            _initStatus();
+        }
 
+        protected PlayerStatus(int duration, int tick, ushort icon, string name)
+        {
+            Duration = duration;
+            Tick = tick;
+            Icon = icon;
+            Name = name;
         }
     }
 
@@ -123,7 +161,7 @@ namespace Hybrasyl
         public new static string Name = "blind";
         public new static string ActionProhibitedMessage = "You can't see well enough to do that.";
 
-        public BlindStatus(User user, int duration, int tick) : base(user, duration, tick, Icon, Name)
+        public BlindStatus(Creature user, int duration, int tick, Creature caster=null) : base(user, duration, tick, Icon, Name, caster)
         {
             OnStartMessage = "The world goes dark!";
             OnEndMessage = "You can see again.";
@@ -132,7 +170,7 @@ namespace Hybrasyl
         public override void OnStart()
         {
             base.OnStart();
-            User.ToggleBlind();
+            Target.ToggleBlind();
         }
 
         public override void OnTick()
@@ -142,7 +180,7 @@ namespace Hybrasyl
         public override void OnEnd()
         {
             base.OnEnd();
-            User.ToggleBlind();
+            Target?.ToggleBlind();
         }
 
     }
@@ -168,16 +206,16 @@ namespace Hybrasyl
         public override void OnStart()
         {
             base.OnStart();
-            if (!User.Status.HasFlag(PlayerCondition.InComa))
-                User.Effect(OnTickEffect, 120);
+            if (!TargetAsUser?.Status.HasFlag(StatusFlags.InComa) ?? true)
+                TargetAsUser?.Effect(OnTickEffect, 120);
         }
 
         public override void OnTick()
         {
             base.OnTick();
-            if (!User.Status.HasFlag(PlayerCondition.InComa))
-                User.Effect(OnTickEffect, 120);
-            User.Damage(_damagePerTick);
+            if (!TargetAsUser?.Status.HasFlag(StatusFlags.InComa) ?? true)
+                TargetAsUser?.Effect(OnTickEffect, 120);
+            Target.Damage(_damagePerTick);
         }
     }
 
@@ -198,14 +236,14 @@ namespace Hybrasyl
         public override void OnStart()
         {
             base.OnStart();
-            if (!User.Status.HasFlag(PlayerCondition.InComa))
-                User.Effect(OnTickEffect, 120);
-            User.ToggleParalyzed();
+            if (!TargetAsUser?.Status.HasFlag(StatusFlags.InComa) ?? true)
+                TargetAsUser?.Effect(OnTickEffect, 120);
+            TargetAsUser.ToggleParalyze();
         }
         public override void OnEnd()
         {
             base.OnEnd();
-            User.ToggleParalyzed();
+            TargetAsUser.ToggleParalyze();
         }
 
     }
@@ -227,7 +265,7 @@ namespace Hybrasyl
         public override void OnStart()
         {
             base.OnStart();
-            if (!User.Status.HasFlag(PlayerCondition.InComa))
+            if (!User.Status.HasFlag(StatusFlags.InComa))
                 User.Effect(OnTickEffect, 120);
             User.ToggleFreeze();
         }
@@ -255,9 +293,9 @@ namespace Hybrasyl
         public override void OnStart()
         {
             base.OnStart();
-            if (!User.Status.HasFlag(PlayerCondition.InComa))
+            if (!User.Status.HasFlag(StatusFlags.InComa))
                 User.Effect(OnTickEffect, 120);
-            User.ToggleAsleep();
+            User.ToggleSleep();
         }
 
         public override void OnTick()
@@ -268,7 +306,7 @@ namespace Hybrasyl
         public override void OnEnd()
         {
             base.OnEnd();
-            User.ToggleAsleep();
+            User.ToggleSleep();
         }
     }
 
@@ -291,14 +329,14 @@ namespace Hybrasyl
         {
             base.OnStart();
             User.Effect(OnTickEffect, 120);
-            User.ToggleNearDeath();
+            User.ToggleComa();
             User.Group?.SendMessage($"{User.Name} is dying!");
         }
 
         public override void OnTick()
         {
             base.OnTick();
-            if (User.Status.HasFlag(PlayerCondition.InComa))
+            if (User.Status.HasFlag(StatusFlags.InComa))
                 User.Effect(OnTickEffect, 120);
             if (Remaining < 5)
                 User.Group?.SendMessage($"{User.Name}'s soul hangs by a thread!");
@@ -311,6 +349,21 @@ namespace Hybrasyl
         }
     }
 
+    internal class CastableStatus : PlayerStatus
+    {
+        private Script _script;
+        private VisibleObject _target;
+        private VisibleObject _invoker;
+
+        public CastableStatus(VisibleObject invoker, VisibleObject target, Script script, int duration, ushort icon, string name,
+            int tick = 1)
+        {
+            _invoker = invoker;
+           
+            _script = script;
+            script.ExecuteScriptableFunction("OnCast", _invoker, _target);
+        }
+    }
     /*
         internal class CastableStatus : PlayerEffect
         {

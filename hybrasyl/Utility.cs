@@ -298,14 +298,14 @@ namespace Hybrasyl
 
         public const string SPIRIT_FORBIDDEN = "Spirits cannot do that.";
 
-        public static Dictionary<PlayerCondition, string> STATUS_RESTRICTION_MESSAGES = new Dictionary
-            <PlayerCondition, string>
+        public static Dictionary<StatusFlags, string> STATUS_RESTRICTION_MESSAGES = new Dictionary
+            <StatusFlags, string>
         {
-            {PlayerCondition.InComa, NearDeathStatus.ActionProhibitedMessage},
-            {PlayerCondition.Asleep, SleepStatus.ActionProhibitedMessage},
-            {PlayerCondition.Frozen, FreezeStatus.ActionProhibitedMessage},
-            {PlayerCondition.Paralyzed, ParalyzeStatus.ActionProhibitedMessage},
-            {PlayerCondition.Alive, Constants.SPIRIT_FORBIDDEN}
+            {StatusFlags.InComa, NearDeathStatus.ActionProhibitedMessage},
+            {StatusFlags.Asleep, SleepStatus.ActionProhibitedMessage},
+            {StatusFlags.Frozen, FreezeStatus.ActionProhibitedMessage},
+            {StatusFlags.Paralyzed, ParalyzeStatus.ActionProhibitedMessage},
+            {StatusFlags.Alive, Constants.SPIRIT_FORBIDDEN}
 
         };
         // These times control various throttling of packet receipts. 

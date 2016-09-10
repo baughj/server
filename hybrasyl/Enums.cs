@@ -162,6 +162,7 @@ namespace Hybrasyl
             public const byte PlayerAnimation = 0x1A;
             public const byte MapChangeCompled = 0x1F;
             public const byte Refresh = 0x22;
+            public const byte Dialog = 0x2F;
             public const byte SpellAnimation = 0x29;
             public const byte Pursuit = 0x30;
             public const byte Board = 0x31;
@@ -337,7 +338,7 @@ namespace Hybrasyl
         #endregion
 
         [Flags]
-        public enum PlayerCondition : byte
+        public enum StatusFlags : byte
         {
             Alive = 0x01,
             Frozen = 0x02,

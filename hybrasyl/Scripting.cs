@@ -566,12 +566,12 @@ from System import DateTime
     {
         public static readonly ILog Logger = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        internal User User { get; set; }
+        internal IPlayer User { get; set; }
         internal HybrasylWorld World { get; set; }
         internal HybrasylMap Map { get; set; }
         public string Name => User.Name;
 
-        public HybrasylUser(User user)
+        public HybrasylUser(IPlayer user)
         {
             User = user;
             World = new HybrasylWorld(user.World);
@@ -828,9 +828,9 @@ from System import DateTime
 
     public class HybrasylWorldObject
     {
-        internal WorldObject Obj { get; set; }
+        internal IWorldObject Obj { get; set; }
 
-        public HybrasylWorldObject(WorldObject obj)
+        public HybrasylWorldObject(IWorldObject obj)
         {
             Obj = obj;
         }

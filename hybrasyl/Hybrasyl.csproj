@@ -138,6 +138,16 @@
   <ItemGroup>
     <Compile Include="Book.cs" />
     <Compile Include="Board.cs" />
+    <Compile Include="Objects\Creature.cs" />
+    <Compile Include="Objects\Door.cs" />
+    <Compile Include="Objects\Gold.cs" />
+    <Compile Include="Objects\InteractableObject.cs" />
+    <Compile Include="Objects\Interfaces.cs" />
+    <Compile Include="Objects\Mobile.cs" />
+    <Compile Include="Objects\Reactor.cs" />
+    <Compile Include="Objects\Signpost.cs" />
+    <Compile Include="Objects\UserInfo.cs" />
+    <Compile Include="Objects\VisibleObject.cs" />
     <Compile Include="PlayerStatus.cs" />
     <Compile Include="Legend.cs" />
     <Compile Include="Time.cs" />

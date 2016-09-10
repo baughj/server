@@ -63,7 +63,7 @@ namespace Hybrasyl.Objects
             }
         }
 
-        public override void OnClick(User invoker)
+        public override void OnClick(IPlayer invoker)
         {
             if (!Ready)
                 OnSpawn();
@@ -74,20 +74,14 @@ namespace Hybrasyl.Objects
             }
         }
 
-        public override void AoiEntry(VisibleObject obj)
+        public override void AoiEntry(IVisibleObject obj)
         {
-            if (Script != null)
-            {
-                Script.ExecuteScriptableFunction("OnEntry", new HybrasylWorldObject(obj));
-            }
+            Script?.ExecuteScriptableFunction("OnEntry", new HybrasylWorldObject(obj));
         }
 
-        public override void AoiDeparture(VisibleObject obj)
+        public override void AoiDeparture(IVisibleObject obj)
         {
-            if (Script != null)
-            {
-                Script.ExecuteScriptableFunction("OnLeave", new HybrasylWorldObject(obj));
-            }
+            Script?.ExecuteScriptableFunction("OnLeave", new HybrasylWorldObject(obj));
         }
 
         public override void ShowTo(VisibleObject obj)

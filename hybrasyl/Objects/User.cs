@@ -37,51 +37,240 @@ using Hybrasyl.XSD;
 namespace Hybrasyl.Objects
 {
 
-    [JsonObject]
-    public class GuildMembership
+    public interface IComplexAttributes
     {
-        public String Title { get; set; }
-        public String Name { get; set; }
-        public String Rank { get; set; }
+        byte Ability { get; set; }
+        uint AbilityExp { get; set; }
+        uint Mp { get; set; }
+        long BaseMp { get; set; }
+        long BaseInt { get; set; }
+        long BaseWis { get; set; }
+        long BaseCon { get; set; }
+        long BaseDex { get; set; }
+        long BaseStr { get; set; }
+        long BonusMp { get; set; }
+        long BonusStr { get; set; }
+        long BonusInt { get; set; }
+        long BonusWis { get; set; }
+        long BonusCon { get; set; }
+        long BonusDex { get; set; }
+        long BonusDmg { get; set; }
+        long BonusHit { get; set; }
     }
 
-    [JsonObject]
-    public class Location
+    public interface IPlayer : IVisibleObject
     {
-        public ushort MapId { get; set; }
-        public Direction Direction { get; set; }
-        public byte X { get; set; }
-        public byte Y { get; set; }
-        public bool WorldMap { get; set; }
-    }
+        byte Level { get; set; }
+        Sex Sex { get; set; }
+        Enums.Class Class { get; set; }
+        bool IsMaster { get; set; }
+        Mailbox Mailbox { get; }
+        bool UnreadMail { get; }
+        UserGroup Group { get; set; }
+        uint ExpToLevel { get; }
+        uint LevelPoints { get; set; }
+        byte CurrentMusicTrack { get; set; }
+        RestPosition RestPosition { get; set; }
+        SkinColor SkinColor { get; set; }
+        bool Transparent { get; set; }
+        byte FaceShape { get; set; }
+        LanternSize LanternSize { get; set; }
+        NameDisplayStyle NameStyle { get; set; }
+        bool DisplayAsMonster { get; set; }
+        ushort MonsterSprite { get; set; }   
+        byte HairStyle { get; set; }
+        byte HairColor { get; set; }
 
-    [JsonObject]
-    public class PasswordInfo
-    {
-        public String Hash { get; set; }
-        public DateTime LastChanged { get; set; }
-        public String LastChangedFrom { get; set; }
-    }
+        LocationInfo Location { get; set; }
+        LoginInfo Login { get; set; }
+        PasswordInfo Password { get; set; }
+        Book SkillBook { get; }
+        Book SpellBook { get; }
+        bool Grouping { get; set; }
+        UserStatus GroupStatus { get; set; }
+        byte[] PortraitData { get; set; }
+        string ProfileText { get; set; }
+        GuildMembershipInfo Guild { get; set; }
 
-    [JsonObject]
-    public class LoginInfo
-    {
-        public DateTime LastLogin { get; set; }
-        public DateTime LastLogoff { get; set; }
-        public DateTime LastLoginFailure { get; set; }
-        public String LastLoginFrom { get; set; }
-        public Int64 LoginFailureCount { get; set; }
-        public DateTime CreatedTime { get; set; }
+        void Enqueue(ServerPacket packet);
+        void SendMessage(string message, byte type);
+        void SendSystemMessage(string message);
+
+        void Resurrect();
     }
 
     [JsonObject(MemberSerialization.OptIn)]
-    public class User : Creature
+    public class User : Creature, IPlayer, IComplexAttributes
     {
         public bool IsSaving { get; set; }
-
+        
         public new static readonly ILog Logger =
                LogManager.GetLogger(
                System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
+        #region Attributes
+
+        [JsonProperty]
+        public byte Level { get; set; }
+
+        [JsonProperty]
+        public byte Ability { get; set; }
+
+        [JsonProperty]
+        public new uint AbilityExp { get; set; }
+
+        public new sbyte Ac
+        {
+            get
+            {
+                Logger.DebugFormat("BonusAc is {0}", BonusAc);
+                var value = 100 - Level / 3 + BonusAc;
+
+                if (value > sbyte.MaxValue)
+                    return sbyte.MaxValue;
+
+                if (value < sbyte.MinValue)
+                    return sbyte.MinValue;
+
+                return (sbyte)BindToRange(value, StatLimitConstants.MIN_AC, StatLimitConstants.MAX_AC);
+            }
+        }
+
+
+        public byte Str
+        {
+            get
+            {
+                var value = BaseStr + BonusStr;
+
+                if (value > byte.MaxValue)
+                    return byte.MaxValue;
+
+                if (value < byte.MinValue)
+                    return byte.MinValue;
+
+                return (byte)BindToRange(value, StatLimitConstants.MIN_STAT, StatLimitConstants.MAX_STAT);
+            }
+        }
+
+        public byte Int
+        {
+            get
+            {
+                var value = BaseInt + BonusInt;
+
+                if (value > byte.MaxValue)
+                    return byte.MaxValue;
+
+                if (value < byte.MinValue)
+                    return byte.MinValue;
+
+                return (byte)BindToRange(value, StatLimitConstants.MIN_STAT, StatLimitConstants.MAX_STAT);
+            }
+        }
+
+        public byte Wis
+        {
+            get
+            {
+                var value = BaseWis + BonusWis;
+
+                if (value > byte.MaxValue)
+                    return byte.MaxValue;
+
+                if (value < byte.MinValue)
+                    return byte.MinValue;
+
+                return (byte)BindToRange(value, StatLimitConstants.MIN_STAT, StatLimitConstants.MAX_STAT);
+            }
+        }
+
+        public byte Con
+        {
+            get
+            {
+                var value = BaseCon + BonusCon;
+
+                if (value > byte.MaxValue)
+                    return byte.MaxValue;
+
+                if (value < byte.MinValue)
+                    return byte.MinValue;
+
+                return (byte)BindToRange(value, StatLimitConstants.MIN_STAT, StatLimitConstants.MAX_STAT);
+            }
+        }
+
+        public byte Dex
+        {
+            get
+            {
+                var value = BaseDex + BonusDex;
+
+                if (value > byte.MaxValue)
+                    return byte.MaxValue;
+
+                if (value < byte.MinValue)
+                    return byte.MinValue;
+
+                return (byte)BindToRange(value, StatLimitConstants.MIN_STAT, StatLimitConstants.MAX_STAT);
+            }
+        }
+
+        public byte Dmg
+        {
+            get
+            {
+                if (BonusDmg > byte.MaxValue)
+                    return byte.MaxValue;
+
+                if (BonusDmg < byte.MinValue)
+                    return byte.MinValue;
+
+                return (byte)BindToRange(BonusDmg, StatLimitConstants.MIN_DMG, StatLimitConstants.MAX_DMG);
+            }
+        }
+
+        public byte Hit
+        {
+            get
+            {
+                if (BonusHit > byte.MaxValue)
+                    return byte.MaxValue;
+
+                if (BonusHit < byte.MinValue)
+                    return byte.MinValue;
+
+                return (byte)BindToRange(BonusHit, StatLimitConstants.MIN_HIT, StatLimitConstants.MAX_HIT);
+            }
+        }
+
+
+
+        [JsonProperty]
+        public long BaseStr { get; set; }
+
+        [JsonProperty]
+        public long BaseInt { get; set; }
+
+        [JsonProperty]
+        public long BaseWis { get; set; }
+
+        [JsonProperty]
+        public long BaseCon { get; set; }
+
+        [JsonProperty]
+        public long BaseDex { get; set; }
+
+        public long BonusStr { get; set; }
+        public long BonusInt { get; set; }
+        public long BonusWis { get; set; }
+        public long BonusCon { get; set; }
+        public long BonusDex { get; set; }
+        public long BonusDmg { get; set; }
+        public long BonusHit { get; set; }
+        #endregion
+
 
         public static string GetStorageKey(string name)
         {
@@ -100,8 +289,6 @@ namespace Hybrasyl.Objects
         [JsonProperty]
         public bool IsMaster { get; set; }
         public UserGroup Group { get; set; }
-        [JsonProperty]
-        public bool Dead { get; set; }
 
         public Mailbox Mailbox => World.GetMailbox(Name);
         public bool UnreadMail => Mailbox.HasUnreadMessages;
@@ -112,7 +299,7 @@ namespace Hybrasyl.Objects
         [JsonProperty]
         public SkinColor SkinColor { get; set; }
         [JsonProperty]
-        internal bool Transparent { get; set; }
+        public bool Transparent { get; set; }
         [JsonProperty]
         public byte FaceShape { get; set; }
         [JsonProperty]
@@ -132,7 +319,7 @@ namespace Hybrasyl.Objects
         #region User metadata
         // Some structs helping us to define various metadata 
         [JsonProperty]
-        public Location Location { get; set; }
+        public LocationInfo Location { get; set; }
         [JsonProperty]
         public LoginInfo Login { get; set; }
         [JsonProperty]
@@ -149,9 +336,8 @@ namespace Hybrasyl.Objects
         public string ProfileText { get; set; }
 
         [JsonProperty]
-        public GuildMembership Guild { get; set; }
+        public GuildMembershipInfo Guild { get; set; }
 
-        [JsonProperty] private ConcurrentDictionary<ushort, IPlayerStatus> _currentStatuses;
 
         private Nation _nation;
 
@@ -170,13 +356,7 @@ namespace Hybrasyl.Objects
         [JsonProperty]
         private string Citizenship { get; set; }
 
-        public string NationName
-        {
-            get
-            {
-                return Nation != null ? Nation.Name : string.Empty;
-            }
-        }
+        public string NationName => Nation != null ? Nation.Name : string.Empty;
 
         [JsonProperty] public Legend Legend;
 
@@ -189,12 +369,9 @@ namespace Hybrasyl.Objects
 
         public Exchange ActiveExchange { get; set; }
 
-        [JsonProperty]
-        public PlayerCondition Status { get; set; }
-
         public bool IsAvailableForExchange
         {
-            get { return Status == Enums.PlayerCondition.Alive; }
+            get { return Status == Enums.StatusFlags.Alive; }
         }
         #endregion
 
@@ -219,7 +396,7 @@ namespace Hybrasyl.Objects
         }
 
         [JsonProperty]
-        public uint LevelPoints = 0;
+        public uint LevelPoints { get; set; }
 
         public byte CurrentMusicTrack { get; set; }
 
@@ -268,6 +445,7 @@ namespace Hybrasyl.Objects
 
         // Throttling checks for messaging
 
+        // TODO: move these into ThrottleInfo / redo throttling
         public long LastSpoke { get; set; }
         public string LastSaid { get; set; }
         public int NumSaidRepeated { get; set; }
@@ -297,21 +475,13 @@ namespace Hybrasyl.Objects
             Client.Enqueue(packet);
         }
 
-        public override void AoiEntry(VisibleObject obj)
+        public void AoiEntry(VisibleObject obj)
         {
             Logger.DebugFormat("Showing {0} to {1}", Name, obj.Name);
             obj.ShowTo(this);
         }
 
-        public override void AoiDeparture(VisibleObject obj)
-        {
-            Logger.DebugFormat("Removing item with ID {0}", obj.Id);
-            var removePacket = new ServerPacket(0x0E);
-            removePacket.WriteUInt32(obj.Id);
-            Enqueue(removePacket);
-        }
-
-        public void AoiDeparture(VisibleObject obj, int transmitDelay)
+        public void AoiDeparture(VisibleObject obj, int transmitDelay=0)
         {
             Logger.DebugFormat("Removing item with ID {0}", obj.Id);
             var removePacket = new ServerPacket(0x0E);
@@ -320,105 +490,14 @@ namespace Hybrasyl.Objects
             Enqueue(removePacket);
         }
 
-        #region Status handling
-
         /// <summary>
-        /// Apply a given status to a player.
-        /// </summary>
-        /// <param name="status">The status to apply to the player.</param>
-        public bool ApplyStatus(IPlayerStatus status)
-        {
-            if (!_currentStatuses.TryAdd(status.Icon, status)) return false;
-            SendStatusUpdate(status);
-            status.OnStart();
-            return true;
-        }
-
-        /// <summary>
-        /// Remove a status from a client, firing the appropriate OnEnd events and removing the icon from the status bar.
-        /// </summary>
-        /// <param name="status">The status to remove.</param>
-        /// <param name="onEnd">Whether or not to run the onEnd event for the status removal.</param>
-        private void _removeStatus(IPlayerStatus status, bool onEnd = true)
-        {
-            if (onEnd)
-                status.OnEnd();
-            SendStatusUpdate(status, true);
-        }
-
-        /// <summary>
-        /// Remove a status from a client.
-        /// </summary>
-        /// <param name="icon">The icon of the status we are removing.</param>
-        /// <param name="onEnd">Whether or not to run the onEnd effect for the status.</param>
-        /// <returns></returns>
-        public bool RemoveStatus(ushort icon, bool onEnd = true)
-        {
-            IPlayerStatus status;
-            if (!_currentStatuses.TryRemove(icon, out status)) return false;
-            _removeStatus(status, onEnd);
-            return true;
-        }
-
-        public bool TryGetStatus(string name, out IPlayerStatus status)
-        {
-            status = _currentStatuses.Values.FirstOrDefault(s => s.Name == name);
-            return status != null;
-        }
-
-        /// <summary>
-        /// Remove all statuses from a user.
-        /// </summary>
-        public void RemoveAllStatuses()
-        {
-            lock (_currentStatuses)
-            {
-                foreach (var status in _currentStatuses.Values)
-                {
-                    _removeStatus(status, false);
-                }
-
-                _currentStatuses.Clear();
-                Logger.Debug($"Current status count is {_currentStatuses.Count}");
-            }
-        }
-
-        /// <summary>
-        /// Process all the given status ticks for a user's active statuses.
-        /// </summary>
-        public void ProcessStatusTicks()
-        {
-            foreach (var kvp in _currentStatuses)
-            {
-                Logger.DebugFormat("OnTick: {0}, {1}", Name, kvp.Value.Name);
-
-                if (kvp.Value.Expired)
-                {
-                    var removed = RemoveStatus(kvp.Key);
-                    Logger.DebugFormat($"Status {kvp.Value.Name} has expired: removal was {removed}");
-                }
-
-                if (kvp.Value.ElapsedSinceTick >= kvp.Value.Tick)
-                {
-                    kvp.Value.OnTick();
-                    SendStatusUpdate(kvp.Value);
-                }
-            }
-        }
-
-        public int ActiveStatusCount => _currentStatuses.Count;
-
-        /// <summary>T
         /// Send a status bar update to the client based on the state of a given status.
         /// </summary>
-        /// <param name="status">The status to update on the client side.</param>
-        /// <param name="remove">Force removal of the status</param>
-
-        public virtual void SendStatusUpdate(IPlayerStatus status, bool remove = false)
+        /// <param name="icon">The status to update on the client side.</param>
+        /// <param name="remaining">The time remaining on the status.</param>
+        public virtual void SendStatusUpdate(ushort icon, double remaining=0)
         {
-            var statuspacket = new ServerPacketStructures.StatusBar {Icon = status.Icon};
-            var elapsed = DateTime.Now - status.Start;
-            var remaining = status.Duration - elapsed.TotalSeconds;
+            var statuspacket = new ServerPacketStructures.StatusBar { Icon = icon };
             StatusBarColor color;
             if (remaining >= 80)
                 color = StatusBarColor.White;
@@ -431,77 +510,21 @@ namespace Hybrasyl.Objects
             else
                 color = StatusBarColor.Blue;
 
-            if (remove || status.Expired)
-                color = StatusBarColor.Off;
-
             Logger.DebugFormat("StackTrace: '{0}'", Environment.StackTrace);
 
             statuspacket.BarColor = color;
-            Logger.DebugFormat($"{Name} - status update - sending Icon: {statuspacket.Icon}, Color: {statuspacket.BarColor}");
-            Logger.DebugFormat($"{Name} - status: {status.Name}, expired: {status.Expired}, remaining: {remaining}, duration: {status.Duration}");
             Enqueue(statuspacket.Packet());
         }
 
-        #region Toggles for statuses
-
         /// <summary>
-        /// Toggle whether or not the user is frozen.
+        /// Send a packet to remove a status.
         /// </summary>
-        public void ToggleFreeze()
+        /// <param name="icon">The icon that will be removed from the status bar.</param>
+        public virtual void SendRemoveStatus(ushort icon)
         {
-            Status ^= PlayerCondition.Frozen;
+            var statuspacket = new ServerPacketStructures.StatusBar {Icon = icon, BarColor = StatusBarColor.Off };
+            Enqueue(statuspacket.Packet());
         }
-
-        /// <summary>
-        /// Toggle whether or not the user is asleep.
-        /// </summary>
-        public void ToggleAsleep()
-        {
-            Status ^= PlayerCondition.Asleep;
-        }
-
-        /// <summary>
-        /// Toggle whether or not the user is blind.
-        /// </summary>
-        public void ToggleBlind()
-        {
-            Status ^= PlayerCondition.Blinded;
-            UpdateAttributes(StatUpdateFlags.Secondary);
-        }
-
-        /// <summary>
-        /// Toggle whether or not the user is paralyzed.
-        /// </summary>
-        public void ToggleParalyzed()
-        {
-            Status ^= PlayerCondition.Paralyzed;
-            UpdateAttributes(StatUpdateFlags.Secondary);
-        }
-
-        /// <summary>
-        /// Toggle whether or not the user is near death (in a coma).
-        /// </summary>
-        public void ToggleNearDeath()
-        {
-            if (Status.HasFlag(PlayerCondition.InComa))
-            {
-                Status &= ~PlayerCondition.InComa;
-                Group?.SendMessage($"{Name} has recovered!");
-            }
-            else
-                Status |= PlayerCondition.InComa;
-        }
-
-        /// <summary>
-        /// Toggle whether or not a user is alive.
-        /// </summary>
-        public void ToggleAlive()
-        {
-            Status ^= PlayerCondition.Alive;
-            UpdateAttributes(StatUpdateFlags.Secondary);
-        }
-
-        #endregion
 
         /// <summary>
         /// Sadly, all things in this world must come to an end.
@@ -509,13 +532,12 @@ namespace Hybrasyl.Objects
         public override void OnDeath()
         {
             var timeofdeath = DateTime.Now;
-            var looters = Group?.Members.Select(user => user.Name).ToList() ?? new List<string>();
 
             // Remove all statuses
             RemoveAllStatuses();
 
             // We are now quite dead, not mostly dead
-            Status &= ~PlayerCondition.InComa;
+            Status &= ~StatusFlags.InComa;
 
             // First: break everything that is breakable in the inventory
             for (byte i = 0; i <= Inventory.Size; ++i)
@@ -524,9 +546,7 @@ namespace Hybrasyl.Objects
                 var theItem = Inventory[i];
                 RemoveItem(i);
                 if (theItem.Perishable) continue;
-                theItem.DeathPileOwner = Name;
-                theItem.DeathPileTime = timeofdeath;
-                DeathPileAllowedLooters = looters;
+                theItem.DeathPile = new DeathPileInfo(Name, Group);
                 Map.AddItem(X, Y, theItem);
             }
 
@@ -539,9 +559,7 @@ namespace Hybrasyl.Objects
                     item.Durability = (uint) Math.Ceiling(item.Durability*0.90);
                 else
                     item.Durability = 0;
-                item.DeathPileOwner = Name;
-                item.DeathPileTime = timeofdeath;
-                DeathPileAllowedLooters = looters;
+                item.DeathPile = new DeathPileInfo(Name, Group);
 
                 Map.AddItem(X, Y, item);
             }
@@ -550,9 +568,7 @@ namespace Hybrasyl.Objects
             if (Gold > 0)
             {
                 var newGold = new Gold(Gold);
-                newGold.DeathPileAllowedLooters = looters;
-                newGold.DeathPileOwner = Name;
-                newGold.DeathPileTime = timeofdeath;
+                newGold.DeathPile = new DeathPileInfo(Name, Group);
                 Map.AddGold(X,Y, new Gold(Gold));
                 Gold = 0;
             }
@@ -568,7 +584,7 @@ namespace Hybrasyl.Objects
             Mp = 0;
             UpdateAttributes(StatUpdateFlags.Full);
 
-            Status &= ~PlayerCondition.Alive;
+            Status &= ~StatusFlags.Alive;
             Effect(76, 120);
             SendSystemMessage("Your items are ripped from your body.");
             Teleport("Chaotic Threshold", 10, 10);
@@ -581,12 +597,12 @@ namespace Hybrasyl.Objects
         /// </summary>
         public void EndComa()
         {
-            if (!Status.HasFlag(PlayerCondition.InComa)) return;
-            ToggleNearDeath();
+            if (!Status.HasFlag(StatusFlags.InComa)) return;
+            ToggleComa();
             var bar = RemoveStatus(NearDeathStatus.Icon, false);
             Logger.Debug($"EndComa: {Name}: removestatus for coma is {bar}");
             
-            foreach (var status in _currentStatuses.Values)
+            foreach (var status in CurrentStatuses.Values)
             {
                 Logger.Debug($"EXTANT STATUSES: {status.Name} with duration {status.Duration}");
             }
@@ -598,7 +614,7 @@ namespace Hybrasyl.Objects
         public void Resurrect()
         {
             // Teleport user to national spawn point
-            Status |= PlayerCondition.Alive;
+            Status |= StatusFlags.Alive;
             if (Nation.Spawnpoints.Count != 0)
             { 
                 var spawnpoint = Nation.Spawnpoints.First();
@@ -628,8 +644,6 @@ namespace Hybrasyl.Objects
 
 
         }
-
-        #endregion
 
         public string GroupText
         {
@@ -685,9 +699,9 @@ namespace Hybrasyl.Objects
             IsAtWorldMap = false;
             Login = new LoginInfo();
             Password = new PasswordInfo();
-            Location = new Location();
+            Location = new LocationInfo();
             Legend = new Legend();
-            Guild = new GuildMembership();
+            Guild = new GuildMembershipInfo();
             LastSaid = String.Empty;
             LastSpoke = 0;
             NumSaidRepeated = 0;
@@ -696,10 +710,10 @@ namespace Hybrasyl.Objects
             DialogState = new DialogState(this);
             UserFlags = new Dictionary<String, String>();
             UserSessionFlags = new Dictionary<String, String>();
-            Status = PlayerCondition.Alive;
+            Status = StatusFlags.Alive;
             Group = null;
             Flags = new Dictionary<string, bool>();
-            _currentStatuses = new ConcurrentDictionary<ushort, IPlayerStatus>();
+            CurrentStatuses = new ConcurrentDictionary<ushort, IPlayerStatus>();
 
             #region Appearance defaults
             RestPosition = RestPosition.Standing;
@@ -925,7 +939,7 @@ namespace Hybrasyl.Objects
         {
             Name = playername;
             Sex = sex;
-            Location = new Location {MapId = targetMap, WorldMap = false, X = targetX, Y = targetY};
+            Location = new LocationInfo {MapId = targetMap, WorldMap = false, X = targetX, Y = targetY};
             _initializeUser(playername);
         }
 
@@ -1028,7 +1042,7 @@ namespace Hybrasyl.Objects
 
         }
 
-        public override void OnClick(User invoker)
+        public override void OnClick(IPlayer invoker)
         {
 
             // Return a profile packet (0x34) to the user who clicked.
@@ -1171,9 +1185,7 @@ namespace Hybrasyl.Objects
             }
         }
 
-        /**
-         * Send a whisper to all members of the group.
-         */
+        //TODO: remove this, use Group instead
         public void SendGroupWhisper(string message)
         {
             if (Group == null)
@@ -1222,7 +1234,7 @@ namespace Hybrasyl.Objects
             return true;
         }
 
-        public override void ShowTo(VisibleObject obj)
+        public override void ShowTo(IVisibleObject obj)
         {
             if (obj is User)
             {
@@ -1299,7 +1311,7 @@ namespace Hybrasyl.Objects
         public void SendUpdateToUser(Client client)
         {
             var offset = Equipment.Armor?.BodyStyle ?? 0;
-            if (!Status.HasFlag(PlayerCondition.Alive))
+            if (!Status.HasFlag(StatusFlags.Alive))
                 offset += 0x20;
 
             Logger.Debug($"Offset is: {offset.ToString("X")}");
@@ -1340,8 +1352,6 @@ namespace Hybrasyl.Objects
                 HairColor = HairColor
             }.Packet());
         }
-
-  
 
         public override void SendId()
         {
@@ -1479,6 +1489,7 @@ namespace Hybrasyl.Objects
 
         }
 
+        #region Flags 
         public void SetFlag(String flag, String value)
         {
             UserFlags[flag] = value;
@@ -1498,8 +1509,7 @@ namespace Hybrasyl.Objects
             }
             return String.Empty;
         }
-
-
+        
         public String GetSessionFlag(String flag)
         {
             String value;
@@ -1509,8 +1519,9 @@ namespace Hybrasyl.Objects
             }
             return String.Empty;
         }
+        #endregion
 
-        public override void UpdateAttributes(StatUpdateFlags flags)
+        public void UpdateAttributes(StatUpdateFlags flags)
         {
             var x08 = new ServerPacket(0x08);
             if (UnreadMail)
@@ -1567,7 +1578,7 @@ namespace Hybrasyl.Objects
             if (flags.HasFlag(StatUpdateFlags.Secondary))
             {
                 x08.WriteByte(0); //Unknown
-                x08.WriteByte((byte) (Status.HasFlag(PlayerCondition.Blinded) ? 0x08 : 0x00));
+                x08.WriteByte((byte) (Status.HasFlag(StatusFlags.Blinded) ? 0x08 : 0x00));
                 x08.WriteByte(0); // Unknown
                 x08.WriteByte(0); // Unknown
                 x08.WriteByte(0); // Unknown
@@ -2041,7 +2052,7 @@ namespace Hybrasyl.Objects
             Enqueue(refreshPacket);
         }
 
-        public override void Refresh()
+        public void Refresh()
         {
             SendMapInfo();
             SendLocation();
@@ -2061,7 +2072,7 @@ namespace Hybrasyl.Objects
             SendItemUpdate(Inventory[newSlot], newSlot);
         }
 
-        public override void RegenerateMp(double mp, Creature regenerator = null)
+        public void RegenerateMp(double mp, ICreature regenerator = null)
         {
             base.RegenerateMp(mp, regenerator);
             UpdateAttributes(StatUpdateFlags.Current);
@@ -2070,7 +2081,6 @@ namespace Hybrasyl.Objects
         public override void Damage(double damage, Enums.Element element = Enums.Element.None,
             Enums.DamageType damageType = Enums.DamageType.Direct, Creature attacker = null)
         {
-            if (Status.HasFlag(PlayerCondition.InComa) || !Status.HasFlag(PlayerCondition.Alive)) return;
             base.Damage(damage, element, damageType, attacker);
             if (Hp == 0)
             {
@@ -2651,7 +2661,7 @@ namespace Hybrasyl.Objects
         /// <param name="requestor">The user requesting the trade</param>
         public void SendExchangeInitiation(User requestor)
         {
-            if (!Status.HasFlag(PlayerCondition.InExchange) || !requestor.Status.HasFlag(PlayerCondition.InExchange)) return;
+            if (!Status.HasFlag(StatusFlags.InExchange) || !requestor.Status.HasFlag(StatusFlags.InExchange)) return;
             Enqueue(new ServerPacketStructures.Exchange
             {
                 Action = ExchangeActions.Initiate,
@@ -2666,7 +2676,7 @@ namespace Hybrasyl.Objects
         /// <param name="itemSlot">The item slot containing a stacked item that will be split (client side)</param>
         public void SendExchangeQuantityPrompt(byte itemSlot)
         {
-            if (!Status.HasFlag(PlayerCondition.InExchange)) return;
+            if (!Status.HasFlag(StatusFlags.InExchange)) return;
             Enqueue(
                 new ServerPacketStructures.Exchange
                 {
@@ -2682,7 +2692,7 @@ namespace Hybrasyl.Objects
         /// <param name="source">Boolean indicating which "side" of the transaction will be updated (source / "left side" == true)</param>
         public void SendExchangeUpdate(Item toAdd, byte slot, bool source = true)
         {
-            if (!Status.HasFlag(PlayerCondition.InExchange)) return;
+            if (!Status.HasFlag(StatusFlags.InExchange)) return;
             var update = new ServerPacketStructures.Exchange
             {
                 Action = ExchangeActions.ItemUpdate,
@@ -2702,7 +2712,7 @@ namespace Hybrasyl.Objects
         /// <param name="source">Boolean indicating which "side" of the transaction will be updated (source / "left side" == true)</param>
         public void SendExchangeUpdate(uint gold, bool source = true)
         {
-            if (!Status.HasFlag(PlayerCondition.InExchange)) return;
+            if (!Status.HasFlag(StatusFlags.InExchange)) return;
             Enqueue(new ServerPacketStructures.Exchange
             {
                 Action=ExchangeActions.GoldUpdate,
@@ -2717,7 +2727,7 @@ namespace Hybrasyl.Objects
         /// <param name="source">The "side" responsible for cancellation (source / "left side" == true)</param>
         public void SendExchangeCancellation(bool source = true)
         {
-            if (!Status.HasFlag(PlayerCondition.InExchange)) return;
+            if (!Status.HasFlag(StatusFlags.InExchange)) return;
             Enqueue(new ServerPacketStructures.Exchange
             {
                 Action = ExchangeActions.Cancel,
@@ -2732,7 +2742,7 @@ namespace Hybrasyl.Objects
 
         public void SendExchangeConfirmation(bool source = true)
         {
-            if (!Status.HasFlag(PlayerCondition.InExchange)) return;
+            if (!Status.HasFlag(StatusFlags.InExchange)) return;
             Enqueue(new ServerPacketStructures.Exchange
             {
                 Action = ExchangeActions.Confirm,

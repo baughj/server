@@ -34,7 +34,7 @@ using System.Text.RegularExpressions;
 namespace Hybrasyl.Objects
 {
     
-    public class Item : VisibleObject
+    public class Item : InteractableObject
     {
         public int TemplateId { get; private set; }
 
@@ -285,6 +285,9 @@ namespace Hybrasyl.Objects
                 Count--;
             }
         }
+
+        public override void OnClick(IPlayer player)
+        { }
 
 
         public Item(int id, World world)
