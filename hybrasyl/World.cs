@@ -116,27 +116,7 @@ namespace Hybrasyl
 
         
         public Dictionary<uint, WorldObject> Objects { get; set; }
-
-        //public Dictionary<ushort, Map> Maps { get; set; }
-        //public Dictionary<string, WorldMap> WorldMaps { get; set; }
-        //public static Dictionary<int, Item> Items { get; set; }
-        //public Dictionary<string, Items.VariantGroup> ItemVariants { get; set; }
-        //public Dictionary<int, Castables.Castable> Skills { get; set; }
-        //public Dictionary<int, Castables.Castable> Spells { get; set; }
-        //public Dictionary<int, MonsterTemplate> Monsters { get; set; }
-        //public Dictionary<int, MerchantTemplate> Merchants { get; set; }
-        //public Dictionary<int, ReactorTemplate> Reactors { get; set; }
         public Dictionary<string, string> Portraits { get; set; }
-        //public Dictionary<string, MethodInfo> Methods { get; set; }
-        //public Dictionary<string, User> Users { get; set; }
-        //public Dictionary<Int64, MapPoint> MapPoints { get; set; }
-        //public Dictionary<string, CompiledMetafile> Metafiles { get; set; }
-        //public Dictionary<string, Nation> Nations { get; set; }
-        //public Dictionary<string, Mailbox> Mailboxes { get; set; }
-        //public Dictionary<int, Board> MessageboardIndex { get; set; }
-        //public Dictionary<string, Board> Messageboards { get; set; }
-        //public Dictionary<string, Creatures.Creature> Creatures { get; set; }
-        //public Dictionary<int, SpawnGroup> SpawnGroups { get; set; }
         public Strings Strings { get; set; }
 
         public WorldDataStore WorldData { set; get;  }
@@ -219,31 +199,11 @@ namespace Hybrasyl
         public World(int port, DataStore store)
             : base(port)
         {
-            //Maps = new Dictionary<ushort, Map>();
-            /* WorldMaps = new Dictionary<string, WorldMap>();
-             Items = new Dictionary<int, Item>();
-             Skills = new Dictionary<int, Castables.Castable>();
-             Spells = new Dictionary<int, Castables.Castable>();
-             Creatures = new Dictionary<string, Creatures.Creature>();
-             SpawnGroups = new Dictionary<int, SpawnGroup>();
-             Merchants = new Dictionary<int, MerchantTemplate>();
-             Methods = new Dictionary<string, MethodInfo>();
-             Users = new Dictionary<string, User>(stringComparer.CurrentCultureIgnoreCase);
-             MapPoints = new Dictionary<Int64, MapPoint>();
-             Metafiles = new Dictionary<string, CompiledMetafile>();
-             Nations = new Dictionary<string, Nation>();
-             GlobalSequences = new List<DialogSequence>();
-             ItemVariants = new Dictionary<string, Items.VariantGroup>();
-             Mailboxes = new Dictionary<string, Mailbox>();
-             Messageboards = new Dictionary<string, Board>();
-             MessageboardIndex = new Dictionary<int, Board>();
-             */
             Objects = new Dictionary<uint, WorldObject>();
             Portraits = new Dictionary<string, string>();
 
             GlobalSequencesCatalog = new Dictionary<string, DialogSequence>();
             ItemCatalog = new Dictionary<Tuple<Sex, string>, Item>();
-            //MapCatalog = new Dictionary<string, Map>();
 
             ScriptProcessor = new ScriptProcessor(this);
             MessageQueue = new BlockingCollection<HybrasylMessage>(new ConcurrentQueue<HybrasylMessage>());

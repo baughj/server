@@ -2,6 +2,8 @@
 using System;
 using Hybrasyl.Enums;
 using Hybrasyl.Objects;
+using Hybrasyl.Scripting;
+using Hybrasyl.XML;
 
 namespace Hybrasyl
 {
@@ -10,7 +12,7 @@ namespace Hybrasyl
     public class ProhibitedCondition : System.Attribute
     {
         public PlayerCondition Condition { get; set; }
-
+        
         public ProhibitedCondition(PlayerCondition requirement)
         {
             Condition = requirement;
@@ -43,7 +45,7 @@ namespace Hybrasyl
         DateTime Start { get; }
         DateTime LastTick { get; }
         Enums.PlayerCondition Conditions { get; set; }
-        ushort Icon { get; }
+        ushort Icon { get; set; }
 
         bool Expired { get; }
         double Elapsed { get; }
@@ -60,7 +62,7 @@ namespace Hybrasyl
     public abstract class PlayerStatus : IPlayerStatus
     {
         public string Name { get; set; }
-        public ushort Icon { get; }
+        public ushort Icon { get; set; }
         public int Tick { get; set; }
         public int Duration { get; set; }
         protected User User { get; set; }
@@ -73,10 +75,10 @@ namespace Hybrasyl
         public virtual void OnStart()
         {
             if (OnStartMessage != string.Empty) User.SendSystemMessage(OnStartMessage);
-            var tickEffect = (ushort?)GetType().GetField("OnTickEffect").GetValue(null);
+            var tickEffect = (ushort?) GetType().GetField("OnTickEffect").GetValue(null);
             if (tickEffect == null) return;
             if (!User.Status.HasFlag(PlayerCondition.InComa))
-                User.Effect((ushort)tickEffect, 120);
+                User.Effect((ushort) tickEffect, 120);
         }
 
         public virtual void OnTick()
@@ -86,7 +88,7 @@ namespace Hybrasyl
             var tickEffect = (ushort?) GetType().GetField("OnTickEffect").GetValue(null);
             if (tickEffect == null) return;
             if (!User.Status.HasFlag(PlayerCondition.InComa))
-                User.Effect((ushort)tickEffect, 120);
+                User.Effect((ushort) tickEffect, 120);
         }
 
         public virtual void OnEnd()
@@ -117,7 +119,11 @@ namespace Hybrasyl
             OnTickMessage = string.Empty;
             OnStartMessage = string.Empty;
             OnEndMessage = string.Empty;
+        }
 
+        protected PlayerStatus(User user)
+        {
+            User = user;
         }
     }
 
@@ -138,7 +144,6 @@ namespace Hybrasyl
         {
             base.OnEnd();
             User.ToggleBlind();
-
         }
 
         public override void OnEnd()
@@ -159,7 +164,8 @@ namespace Hybrasyl
 
         private readonly double _damagePerTick;
 
-        public PoisonStatus(User user, int duration, int tick, double damagePerTick) : base(user, duration, tick, Icon, Name)
+        public PoisonStatus(User user, int duration, int tick, double damagePerTick)
+            : base(user, duration, tick, Icon, Name)
         {
             OnStartMessage = "Poison";
             OnTickMessage = "Poison is coursing through your veins.";
@@ -196,6 +202,7 @@ namespace Hybrasyl
             base.OnStart();
             User.ToggleParalyzed();
         }
+
         public override void OnEnd()
         {
             base.OnEnd();
@@ -223,6 +230,7 @@ namespace Hybrasyl
             base.OnStart();
             User.ToggleFreeze();
         }
+
         public override void OnEnd()
         {
             base.OnEnd();
@@ -249,7 +257,7 @@ namespace Hybrasyl
             base.OnStart();
             User.ToggleAsleep();
         }
-      
+
         public override void OnEnd()
         {
             base.OnEnd();
@@ -295,17 +303,20 @@ namespace Hybrasyl
         }
     }
 
-    /*
-        internal class CastableStatus : PlayerEffect
-        {
-            private Script _script;
 
-            public CastableEffect(User user, Script script, int duration = 30000, int ticks = 1000)
-                : base(user, duration, ticks)
-            {
-                _script = script;
-                Icon = icon;
-            }
+    internal class CastableStatus : PlayerStatus
+    {
+        private readonly Script _script;
+        public ushort OnTickEffect;
+
+        public CastableStatus(User user, Script script)
+            : base(user)
+        {
+            _script = script;
+            Icon = _script.Scope.GetVariable<ushort>("Icon");
+            Tick = _script.Scope.GetVariable<ushort>("Tick");
+            Duration = _script.Scope.GetVariable<int>("Duration");
+            OnTickEffect = script.Scope.GetVariable<ushort>("OnTickEffect");
         }
-        */
+    }
 }

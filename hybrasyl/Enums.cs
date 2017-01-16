@@ -338,19 +338,15 @@ namespace Hybrasyl
         #endregion
 
         [Flags]
-        public enum PlayerCondition : int
+        public enum PlayerFlags : int
         {
             Alive = 0x01,
-            Frozen = 0x02,
-            Asleep = 0x04,
-            Paralyzed = 0x08,
-            Blinded = 0x10,
-            InExchange = 0x20,
-            InDialog = 0x40,
-            InComa = 0x80,
-            Casting = 0x100,
-            Pvp = 0x200,
-            AliveExchange = (Alive | InExchange)
+            InExchange = 0x02,
+            InDialog = 0x04,
+            InBoard = 0x08,
+            Casting = 0x10,
+            Pvp = 0x20,
+            GameMaster = 0x40,
         }
 
         [Flags]

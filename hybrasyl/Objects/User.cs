@@ -34,6 +34,7 @@ using System.Drawing;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Hybrasyl.Scripting;
 using Class = Hybrasyl.Castables.Class;
 
 namespace Hybrasyl.Objects
@@ -179,13 +180,7 @@ namespace Hybrasyl.Objects
         [JsonProperty]
         private string Citizenship { get; set; }
 
-        public string NationName
-        {
-            get
-            {
-                return Nation != null ? Nation.Name : string.Empty;
-            }
-        }
+        public string NationName => Nation != null ? Nation.Name : string.Empty;
 
         [JsonProperty] public Legend Legend;
 
@@ -200,6 +195,7 @@ namespace Hybrasyl.Objects
 
         [JsonProperty]
         public PlayerCondition Status { get; set; }
+
 
         public bool IsAvailableForExchange
         {
@@ -2434,6 +2430,20 @@ namespace Hybrasyl.Objects
                                 };
                                 Enqueue(effectAnimation.Packet());
                                 SendAnimation(effectAnimation.Packet());
+                            }
+                            // Handle scripted castables
+                            if (!string.IsNullOrEmpty(castObject.Effects.Script))
+                            {
+                                Script castableScript;
+                                if (World.ScriptProcessor.TryGetScript(castObject.Effects.Script, out castableScript))
+                                {
+                                    try
+                                    {
+                                        castableScript.ExecuteScriptableFunction("OnCast",
+                                            new HybrasylUser(this));
+                                    }
+                                }
+
                             }
 
                         }

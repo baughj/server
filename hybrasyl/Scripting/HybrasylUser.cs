@@ -32,37 +32,19 @@ using log4net;
 namespace Hybrasyl.Scripting
 {
 
-    public class HybrasylUser
+
+    public class HybrasylUser : HybrasylCreature
     {
         public static readonly ILog Logger = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        internal User User { get; set; }
         internal HybrasylWorld World { get; set; }
         internal HybrasylMap Map { get; set; }
-        public string Name => User.Name;
+        public string Name => CreatureObject.Name;
 
-        public uint Hp
-        {
-            get { return User.Hp; }
-            set {
-                User.Hp = value;
-                User.UpdateAttributes(StatUpdateFlags.Current);
-            }
-        }
+        private User User => CreatureObject as User;
 
-        public uint Mp
+        public HybrasylUser(User user) : base(user)
         {
-            get { return User.Mp; }
-            set
-            {
-                User.Mp = value;
-                User.UpdateAttributes(StatUpdateFlags.Current);
-            }
-        }
-
-        public HybrasylUser(User user)
-        {
-            User = user;
             World = new HybrasylWorld(user.World);
             Map = new HybrasylMap(user.Map);
         }
