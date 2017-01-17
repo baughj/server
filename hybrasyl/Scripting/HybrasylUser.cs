@@ -38,15 +38,13 @@ namespace Hybrasyl.Scripting
         public static readonly ILog Logger = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
         internal HybrasylWorld World { get; set; }
-        internal HybrasylMap Map { get; set; }
         public string Name => CreatureObject.Name;
 
-        private User User => CreatureObject as User;
+        internal User User => CreatureObject as User;
 
         public HybrasylUser(User user) : base(user)
         {
             World = new HybrasylWorld(user.World);
-            Map = new HybrasylMap(user.Map);
         }
 
         public List<HybrasylWorldObject> GetViewportObjects()

@@ -338,7 +338,7 @@ namespace Hybrasyl
         #endregion
 
         [Flags]
-        public enum PlayerFlags : int
+        public enum PlayerState : int
         {
             Alive = 0x01,
             InExchange = 0x02,

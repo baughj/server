@@ -4,33 +4,42 @@ using Hybrasyl.Enums;
 using Hybrasyl.Objects;
 using Hybrasyl.Scripting;
 using Hybrasyl.XML;
+using Hybrasyl.Castables;
+using System.Collections.Generic;
 
 namespace Hybrasyl
 {
-
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    public class ProhibitedCondition : System.Attribute
+    public class ProhibitedConditions : Attribute
     {
-        public PlayerCondition Condition { get; set; }
-        
-        public ProhibitedCondition(PlayerCondition requirement)
+        public PlayerCondition Condition;
+        public PlayerState State;
+
+        public ProhibitedConditions(params object[] requirements)
         {
-            Condition = requirement;
+            foreach (var obj in requirements)
+            {
+                if (obj is PlayerCondition) { Condition |= (PlayerCondition)obj; }
+                else if (obj is PlayerState) { State |= (PlayerState)obj; }
+            }
         }
     }
 
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    public class RequiredCondition : System.Attribute
+    public class RequiredConditions : Attribute
     {
-        public PlayerCondition Condition { get; set; }
-        public string ErrorMessage { get; set; }
+        public PlayerCondition Condition;
+        public PlayerState State;
 
-        public RequiredCondition(PlayerCondition requirement)
+        public RequiredConditions(params object[] requirements)
         {
-            Condition = requirement;
+            foreach (var obj in requirements)
+            {
+                if (obj is PlayerCondition) { Condition |= (PlayerCondition)obj; }
+                else if (obj is PlayerState) { State |= (PlayerState)obj; }
+            }
         }
     }
-
 
     public interface IPlayerStatus
     {
@@ -44,8 +53,8 @@ namespace Hybrasyl
         int Tick { get; set; }
         DateTime Start { get; }
         DateTime LastTick { get; }
-        Enums.PlayerCondition Conditions { get; set; }
-        ushort Icon { get; set; }
+        PlayerState Conditions { get; set; }
+        ushort Icon { get; }
 
         bool Expired { get; }
         double Elapsed { get; }
@@ -66,7 +75,7 @@ namespace Hybrasyl
         public int Tick { get; set; }
         public int Duration { get; set; }
         protected User User { get; set; }
-        public Enums.PlayerCondition Conditions { get; set; }
+        public PlayerState Conditions { get; set; }
 
         public DateTime Start { get; }
 
@@ -77,18 +86,18 @@ namespace Hybrasyl
             if (OnStartMessage != string.Empty) User.SendSystemMessage(OnStartMessage);
             var tickEffect = (ushort?) GetType().GetField("OnTickEffect").GetValue(null);
             if (tickEffect == null) return;
-            if (!User.Status.HasFlag(PlayerCondition.InComa))
-                User.Effect((ushort) tickEffect, 120);
+            if (!User.Condition.HasFlag(PlayerCondition.Coma))
+                User.Effect((ushort)tickEffect, 120);
         }
 
         public virtual void OnTick()
         {
             LastTick = DateTime.Now;
             if (OnTickMessage != string.Empty) User.SendSystemMessage(OnTickMessage);
-            var tickEffect = (ushort?) GetType().GetField("OnTickEffect").GetValue(null);
+            var tickEffect = (ushort?)GetType().GetField("OnTickEffect").GetValue(null);
             if (tickEffect == null) return;
-            if (!User.Status.HasFlag(PlayerCondition.InComa))
-                User.Effect((ushort) tickEffect, 120);
+            if (!User.Condition.HasFlag(PlayerCondition.Coma))
+                User.Effect((ushort)tickEffect, 120);
         }
 
         public virtual void OnEnd()
@@ -290,7 +299,7 @@ namespace Hybrasyl
         public override void OnTick()
         {
             base.OnTick();
-            if (User.Status.HasFlag(PlayerCondition.InComa))
+            if (User.Condition.HasFlag(PlayerCondition.Coma))
                 User.Effect(OnTickEffect, 120);
             if (Remaining < 5)
                 User.Group?.SendMessage($"{User.Name}'s soul hangs by a thread!");
