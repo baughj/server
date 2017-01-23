@@ -1068,7 +1068,7 @@ namespace Hybrasyl
             }
         }
 
-        [ProhibitedConditions(PlayerCondition.Coma,PlayerCondition.Sleep,PlayerCondition.Freeze,PlayerCondition.Paralyze)]
+        [ProhibitedConditions(CreatureCondition.Coma,CreatureCondition.Sleep,CreatureCondition.Freeze,CreatureCondition.Paralyze)]
         [RequiredConditions(PlayerState.Alive)]
         private void PacketHandler_0x06_Walk(Object obj, ClientPacket packet)
         {
@@ -1078,7 +1078,7 @@ namespace Hybrasyl
             user.Walk((Direction)direction);
         }
 
-        [ProhibitedConditions(PlayerCondition.Coma, PlayerCondition.Sleep, PlayerCondition.Freeze, PlayerCondition.Paralyze)]
+        [ProhibitedConditions(CreatureCondition.Coma, CreatureCondition.Sleep, CreatureCondition.Freeze, CreatureCondition.Paralyze)]
         [RequiredConditions(PlayerState.Alive)]
         private void PacketHandler_0x07_PickupItem(Object obj, ClientPacket packet)
         {
@@ -1167,7 +1167,7 @@ namespace Hybrasyl
             }
         }
 
-        [ProhibitedConditions(PlayerCondition.Coma, PlayerCondition.Sleep, PlayerCondition.Freeze, PlayerCondition.Paralyze)]
+        [ProhibitedConditions(CreatureCondition.Coma, CreatureCondition.Sleep, CreatureCondition.Freeze, CreatureCondition.Paralyze)]
         [RequiredConditions(PlayerState.Alive)]
         private void PacketHandler_0x08_DropItem(Object obj, ClientPacket packet)
         {
@@ -2212,7 +2212,7 @@ namespace Hybrasyl
             }
         }
 
-        [ProhibitedConditions(PlayerCondition.Coma, PlayerCondition.Sleep, PlayerCondition.Freeze, PlayerCondition.Paralyze)]
+        [ProhibitedConditions(CreatureCondition.Coma, CreatureCondition.Sleep, CreatureCondition.Freeze, CreatureCondition.Paralyze)]
         [RequiredConditions(PlayerState.Alive)]
         private void PacketHandler_0x0F_UseSpell(object obj, ClientPacket packet)
         {
@@ -2332,7 +2332,7 @@ namespace Hybrasyl
             loginUser.Reindex();
         }
 
-        [ProhibitedConditions(PlayerCondition.Freeze)]
+        [ProhibitedConditions(CreatureCondition.Freeze)]
         private void PacketHandler_0x11_Turn(Object obj, ClientPacket packet)
         {
             var user = (User)obj;
@@ -2341,7 +2341,7 @@ namespace Hybrasyl
             user.Turn((Direction)direction);
         }
 
-        [ProhibitedConditions(PlayerCondition.Coma, PlayerCondition.Sleep, PlayerCondition.Freeze, PlayerCondition.Paralyze)]
+        [ProhibitedConditions(CreatureCondition.Coma, CreatureCondition.Sleep, CreatureCondition.Freeze, CreatureCondition.Paralyze)]
         [RequiredConditions(PlayerState.Alive)]
         private void PacketHandler_0x13_Attack(object obj, ClientPacket packet)
         {
@@ -2401,7 +2401,7 @@ namespace Hybrasyl
             }
         }
 
-        [ProhibitedConditions(PlayerCondition.Coma, PlayerCondition.Sleep, PlayerCondition.Freeze)]
+        [ProhibitedConditions(CreatureCondition.Coma, CreatureCondition.Sleep, CreatureCondition.Freeze)]
         [RequiredConditions(PlayerState.Alive)]
         private void PacketHandler_0x1C_UseItem(Object obj, ClientPacket packet)
         {
@@ -2556,7 +2556,7 @@ namespace Hybrasyl
             }
         }
 
-        [ProhibitedConditions(PlayerCondition.Coma, PlayerCondition.Sleep, PlayerCondition.Freeze)]
+        [ProhibitedConditions(CreatureCondition.Coma, CreatureCondition.Sleep, CreatureCondition.Freeze)]
         [RequiredConditions(PlayerState.Alive)]
         private void PacketHandler_0x1D_Emote(Object obj, ClientPacket packet)
         {
@@ -2569,7 +2569,7 @@ namespace Hybrasyl
             }
         }
 
-        [ProhibitedConditions(PlayerCondition.Coma, PlayerCondition.Sleep, PlayerCondition.Freeze)]
+        [ProhibitedConditions(CreatureCondition.Coma, CreatureCondition.Sleep, CreatureCondition.Freeze)]
         [RequiredConditions(PlayerState.Alive)]
         private void PacketHandler_0x24_DropGold(Object obj, ClientPacket packet)
         {
@@ -2639,7 +2639,7 @@ namespace Hybrasyl
          *    5) Send them a dialog and have them explicitly accept.
          *    6) If accepted, join group (see stage 0x03).
          */
-        [ProhibitedConditions(PlayerCondition.Coma)]
+        [ProhibitedConditions(CreatureCondition.Coma)]
         [RequiredConditions(PlayerState.Alive)]
         private void PacketHandler_0x2E_GroupRequest(Object obj, ClientPacket packet)
         {
@@ -2714,7 +2714,7 @@ namespace Hybrasyl
             }
         }
 
-        [ProhibitedConditions(PlayerCondition.Coma)]
+        [ProhibitedConditions(CreatureCondition.Coma)]
         [RequiredConditions(PlayerState.Alive)]
         private void PacketHandler_0x2F_GroupToggle(Object obj, ClientPacket packet)
         {
@@ -2734,7 +2734,7 @@ namespace Hybrasyl
             // are extra bytes coming through but not sure what purpose they serve.
         }
 
-        [ProhibitedConditions(PlayerCondition.Coma, PlayerCondition.Sleep, PlayerCondition.Freeze)]
+        [ProhibitedConditions(CreatureCondition.Coma, CreatureCondition.Sleep, CreatureCondition.Freeze)]
         [RequiredConditions(PlayerState.Alive)]
         private void PacketHandler_0x2A_DropGoldOnCreature(Object obj, ClientPacket packet)
         {
@@ -2791,7 +2791,7 @@ namespace Hybrasyl
             }
         }
 
-        [ProhibitedConditions(PlayerCondition.Coma, PlayerCondition.Sleep, PlayerCondition.Freeze)]
+        [ProhibitedConditions(CreatureCondition.Coma, CreatureCondition.Sleep, CreatureCondition.Freeze)]
         [RequiredConditions(PlayerState.Alive)]
         private void PacketHandler_0x29_DropItemOnCreature(Object obj, ClientPacket packet)
         {
@@ -2903,7 +2903,7 @@ namespace Hybrasyl
             // Is the slot invalid? Does at least one of the slots contain an item?
         }
 
-        [ProhibitedConditions(PlayerCondition.Coma, PlayerCondition.Sleep, PlayerCondition.Freeze)]
+        [ProhibitedConditions(CreatureCondition.Coma, CreatureCondition.Sleep, CreatureCondition.Freeze)]
         [RequiredConditions(PlayerState.Alive)]
         private void PacketHandler_0x3B_AccessMessages(Object obj, ClientPacket packet)
         {
@@ -3287,7 +3287,7 @@ namespace Hybrasyl
         }
 
 
-        [ProhibitedConditions(PlayerCondition.Coma, PlayerCondition.Sleep, PlayerCondition.Freeze, PlayerCondition.Paralyze)]
+        [ProhibitedConditions(CreatureCondition.Coma, CreatureCondition.Sleep, CreatureCondition.Freeze, CreatureCondition.Paralyze)]
         [RequiredConditions(PlayerState.Alive)]
         private void PacketHandler_0x3E_UseSkill(object obj, ClientPacket packet)
         {
@@ -3297,7 +3297,7 @@ namespace Hybrasyl
             user.UseSkill(slot);
         }
 
-        [ProhibitedConditions(PlayerCondition.Coma, PlayerCondition.Sleep, PlayerCondition.Freeze)]
+        [ProhibitedConditions(CreatureCondition.Coma, CreatureCondition.Sleep, CreatureCondition.Freeze)]
         private void PacketHandler_0x3F_MapPointClick(Object obj, ClientPacket packet)
         {
             var user = (User)obj;
@@ -3335,7 +3335,7 @@ namespace Hybrasyl
             user.Refresh();
         }
 
-        [ProhibitedConditions(PlayerCondition.Coma, PlayerCondition.Sleep, PlayerCondition.Freeze)]
+        [ProhibitedConditions(CreatureCondition.Coma, CreatureCondition.Sleep, CreatureCondition.Freeze)]
         [RequiredConditions(PlayerState.Alive)]
         private void PacketHandler_0x39_NPCMainMenu(Object obj, ClientPacket packet)
         {
@@ -3435,7 +3435,7 @@ namespace Hybrasyl
             }
         }
 
-        [ProhibitedConditions(PlayerCondition.Coma, PlayerCondition.Sleep, PlayerCondition.Freeze)]
+        [ProhibitedConditions(CreatureCondition.Coma, CreatureCondition.Sleep, CreatureCondition.Freeze)]
         [RequiredConditions(PlayerState.Alive)]
         private void PacketHandler_0x3A_DialogUse(Object obj, ClientPacket packet)
         {
@@ -3535,7 +3535,7 @@ namespace Hybrasyl
             }
         }
 
-        [ProhibitedConditions(PlayerCondition.Coma, PlayerCondition.Sleep, PlayerCondition.Freeze)]
+        [ProhibitedConditions(CreatureCondition.Coma, CreatureCondition.Sleep, CreatureCondition.Freeze)]
         [RequiredConditions(PlayerState.Alive)]
         private void PacketHandler_0x43_PointClick(Object obj, ClientPacket packet)
         {
@@ -3596,7 +3596,7 @@ namespace Hybrasyl
             }
         }
 
-        [ProhibitedConditions(PlayerCondition.Coma, PlayerCondition.Sleep, PlayerCondition.Freeze)]
+        [ProhibitedConditions(CreatureCondition.Coma, CreatureCondition.Sleep, CreatureCondition.Freeze)]
         [RequiredConditions(PlayerState.Alive)]
         private void PacketHandler_0x44_EquippedItemClick(Object obj, ClientPacket packet)
         {
@@ -3642,7 +3642,7 @@ namespace Hybrasyl
             }
         }
 
-        [ProhibitedConditions(PlayerCondition.Coma, PlayerCondition.Sleep, PlayerCondition.Freeze)]
+        [ProhibitedConditions(CreatureCondition.Coma, CreatureCondition.Sleep, CreatureCondition.Freeze)]
         [RequiredConditions(PlayerState.Alive)]
         private void PacketHandler_0x47_StatPoint(Object obj, ClientPacket packet)
         {
@@ -3680,7 +3680,7 @@ namespace Hybrasyl
             }
         }
 
-        [ProhibitedConditions(PlayerCondition.Coma, PlayerCondition.Sleep, PlayerCondition.Freeze)]
+        [ProhibitedConditions(CreatureCondition.Coma, CreatureCondition.Sleep, CreatureCondition.Freeze)]
         [RequiredConditions(PlayerState.Alive)]
         private void PacketHandler_0x4A_Trade(object obj, ClientPacket packet)
         {

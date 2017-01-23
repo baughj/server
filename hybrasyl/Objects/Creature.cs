@@ -21,6 +21,7 @@
  */
  
 using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using Hybrasyl.Castables;
 using Hybrasyl.Enums;
@@ -103,6 +104,9 @@ namespace Hybrasyl.Objects
         [JsonProperty("Equipment")]
         public Inventory Equipment { get; protected set; }
 
+        [JsonProperty]
+        public CreatureCondition Condition { get; set; }
+
         public Creature()
         {
             Gold = 0;
@@ -126,6 +130,7 @@ namespace Hybrasyl.Objects
                 return start;
         }
 
+        #region Stats
         public uint MaximumHp
         {
             get
@@ -311,6 +316,9 @@ namespace Hybrasyl.Objects
             }
         }
 
+        #endregion
+
+
         private uint _mLastHitter;
 
         public Creature LastHitter
@@ -409,13 +417,169 @@ namespace Hybrasyl.Objects
             }
         }
 
-        //public virtual bool AddItem(ItemObject item, bool updateWeight = true) { return false; }
-        //public virtual bool AddItem(ItemObject item, int slot, bool updateWeight = true) { return false; }
-        //public virtual bool RemoveItem(int slot, bool updateWeight = true) { return false; }
-        //public virtual bool RemoveItem(int slot, int count, bool updateWeight = true) { return false; }
-        //public virtual bool AddEquipment(ItemObject item) { return false; }
-        //public virtual bool AddEquipment(ItemObject item, byte slot, bool sendUpdate = true) { return false; }
-        //public virtual bool RemoveEquipment(byte slot) { return false; }
+
+        /// <summary>
+        /// Apply an XML-defined status to a creature.
+        /// </summary>
+        /// <param name="status">AddStatus structure for the status to be applied.</param>
+        public virtual void ApplyStatus(AddStatus status)
+        {
+            
+            
+        }
+
+        /// <summary>
+        /// Remove an XML-defined status from a creature.
+        /// </summary>
+        /// <param name="status">RemoveStatus structure for the status to be removed.</param>
+        public virtual void RemoveStatus(RemoveStatus status)
+        { }
+
+       
+        [JsonProperty]
+        protected ConcurrentDictionary<ushort, IPlayerStatus> _currentStatuses;
+
+        /// <summary>
+        /// Apply a given status to a creature for a status implementing IPlayerStatus.
+        /// </summary>
+        /// <param name="status">The status to apply to the player.</param>
+        public virtual bool ApplyStatus(IPlayerStatus status)
+        {
+            if (!_currentStatuses.TryAdd(status.Icon, status)) return false;
+            status.OnStart();
+            return true;
+        }
+
+        /// <summary>
+        /// Remove a status from a creature, firing the appropriate OnEnd events and removing the icon from the status bar.
+        /// </summary>
+        /// <param name="status">The status to remove.</param>
+        /// <param name="onEnd">Whether or not to run the onEnd event for the status removal.</param>
+        protected virtual void _removeStatus(IPlayerStatus status, bool onEnd = true)
+        {
+            if (onEnd)
+                status.OnEnd();
+        }
+
+        /// <summary>
+        /// Remove a status from a client.
+        /// </summary>
+        /// <param name="icon">The icon of the status we are removing.</param>
+        /// <param name="onEnd">Whether or not to run the onEnd effect for the status.</param>
+        /// <returns></returns>
+        public bool RemoveStatus(ushort icon, bool onEnd = true)
+        {
+            IPlayerStatus status;
+            if (!_currentStatuses.TryRemove(icon, out status)) return false;
+            _removeStatus(status, onEnd);
+            return true;
+        }
+
+        public bool TryGetStatus(string name, out IPlayerStatus status)
+        {
+            status = _currentStatuses.Values.FirstOrDefault(s => s.Name == name);
+            return status != null;
+        }
+
+        /// <summary>
+        /// Remove all statuses from a creature.
+        /// </summary>
+        public void RemoveAllStatuses()
+        {
+            lock (_currentStatuses)
+            {
+                foreach (var status in _currentStatuses.Values)
+                {
+                    _removeStatus(status, false);
+                }
+
+                _currentStatuses.Clear();
+                Logger.Debug($"Current status count is {_currentStatuses.Count}");
+            }
+        }
+
+        /// <summary>
+        /// Process all the given status ticks for a creature's active statuses.
+        /// </summary>
+        public virtual void ProcessStatusTicks()
+        {
+            foreach (var kvp in _currentStatuses)
+            {
+                Logger.DebugFormat("OnTick: {0}, {1}", Name, kvp.Value.Name);
+
+                if (kvp.Value.Expired)
+                {
+                    var removed = RemoveStatus(kvp.Key);
+                    Logger.DebugFormat($"Status {kvp.Value.Name} has expired: removal was {removed}");
+                }
+
+                if (kvp.Value.ElapsedSinceTick >= kvp.Value.Tick)
+                {
+                    kvp.Value.OnTick();
+                }
+            }
+        }
+
+        public int ActiveStatusCount => _currentStatuses.Count;
+
+        /// <summary>T
+        /// Send a status bar update to the client based on the state of a given status.
+        /// </summary>
+        /// <param name="status">The status to update on the client side.</param>
+        /// <param name="remove">Force removal of the status</param>
+
+  
+
+        #region Toggles for statuses
+
+        /// <summary>
+        /// Toggle whether or not the creature is frozen.
+        /// </summary>
+        public void ToggleFreeze()
+        {
+            Condition ^= CreatureCondition.Freeze;
+        }
+
+        /// <summary>
+        /// Toggle whether or not the creature is asleep.
+        /// </summary>
+        public void ToggleAsleep()
+        {
+            Condition ^= CreatureCondition.Sleep;
+        }
+
+        /// <summary>
+        /// Toggle whether or not the creature is blind.
+        /// </summary>
+        public void ToggleBlind()
+        {
+            Condition ^= CreatureCondition.Blind;
+            UpdateAttributes(StatUpdateFlags.Secondary);
+        }
+
+        /// <summary>
+        /// Toggle whether or not the creature is paralyzed.
+        /// </summary>
+        public void ToggleParalyzed()
+        {
+            Condition ^= CreatureCondition.Paralyze;
+            UpdateAttributes(StatUpdateFlags.Secondary);
+        }
+
+        /// <summary>
+        /// Toggle whether or not a creature is near death (in a coma).
+        /// </summary>
+        public virtual void ToggleNearDeath()
+        {
+            if (Condition.HasFlag(CreatureCondition.Coma))
+            {
+                Condition &= ~CreatureCondition.Coma;
+            }
+            else
+                Condition |= CreatureCondition.Coma;
+        }
+
+        #endregion
 
         public virtual void Heal(double heal, Creature healer = null)
         {

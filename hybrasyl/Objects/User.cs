@@ -109,8 +109,8 @@ namespace Hybrasyl.Objects
 
         public bool CanCast
             =>
-            !(Condition.HasFlag(PlayerCondition.Sleep) ||
-              Condition.HasFlag(PlayerCondition.Freeze) || Condition.HasFlag(PlayerCondition.Paralyze));
+            !(Condition.HasFlag(CreatureCondition.Sleep) ||
+              Condition.HasFlag(CreatureCondition.Freeze) || Condition.HasFlag(CreatureCondition.Paralyze));
         
 
         public Mailbox Mailbox => World.GetMailbox(Name);
@@ -161,8 +161,6 @@ namespace Hybrasyl.Objects
         [JsonProperty]
         public GuildMembership Guild { get; set; }
 
-        [JsonProperty] private ConcurrentDictionary<ushort, IPlayerStatus> _currentStatuses;
-
         private Nation _nation;
 
         public Nation Nation
@@ -192,9 +190,6 @@ namespace Hybrasyl.Objects
         private Dictionary<string, string> UserSessionFlags { get; set; }
 
         public Exchange ActiveExchange { get; set; }
-
-        [JsonProperty]
-        public PlayerCondition Condition { get; set; }
 
         [JsonProperty]
         public PlayerState State { get; set; }
@@ -328,74 +323,51 @@ namespace Hybrasyl.Objects
             Enqueue(removePacket);
         }
 
-        #region Status handling
-
         /// <summary>
-        /// Apply a given status to a player.
+        /// Toggle whether or not a player is near death (in a coma).
         /// </summary>
-        /// <param name="status">The status to apply to the player.</param>
-        public bool ApplyStatus(IPlayerStatus status)
+        public override void ToggleNearDeath()
         {
-            if (!_currentStatuses.TryAdd(status.Icon, status)) return false;
-            SendStatusUpdate(status);
-            status.OnStart();
-            return true;
-        }
-
-        /// <summary>
-        /// Remove a status from a client, firing the appropriate OnEnd events and removing the icon from the status bar.
-        /// </summary>
-        /// <param name="status">The status to remove.</param>
-        /// <param name="onEnd">Whether or not to run the onEnd event for the status removal.</param>
-        private void _removeStatus(IPlayerStatus status, bool onEnd = true)
-        {
-            if (onEnd)
-                status.OnEnd();
-            SendStatusUpdate(status, true);
-        }
-
-        /// <summary>
-        /// Remove a status from a client.
-        /// </summary>
-        /// <param name="icon">The icon of the status we are removing.</param>
-        /// <param name="onEnd">Whether or not to run the onEnd effect for the status.</param>
-        /// <returns></returns>
-        public bool RemoveStatus(ushort icon, bool onEnd = true)
-        {
-            IPlayerStatus status;
-            if (!_currentStatuses.TryRemove(icon, out status)) return false;
-            _removeStatus(status, onEnd);
-            return true;
-        }
-
-        public bool TryGetStatus(string name, out IPlayerStatus status)
-        {
-            status = _currentStatuses.Values.FirstOrDefault(s => s.Name == name);
-            return status != null;
-        }
-
-        /// <summary>
-        /// Remove all statuses from a user.
-        /// </summary>
-        public void RemoveAllStatuses()
-        {
-            lock (_currentStatuses)
+            base.ToggleNearDeath();
+            if (!Condition.HasFlag(CreatureCondition.Coma))
             {
-                foreach (var status in _currentStatuses.Values)
-                {
-                    _removeStatus(status, false);
-                }
-
-                _currentStatuses.Clear();
-                Logger.Debug($"Current status count is {_currentStatuses.Count}");
+                Group?.SendMessage($"{Name} has recovered!");
             }
         }
 
         /// <summary>
-        /// Process all the given status ticks for a user's active statuses.
+        /// Toggle whether or not a player is alive.
         /// </summary>
-        public void ProcessStatusTicks()
+        public void ToggleAlive()
         {
+            State ^= PlayerState.Alive;
+            UpdateAttributes(StatUpdateFlags.Secondary);
+        }
+
+        public override bool ApplyStatus(IPlayerStatus status)
+        {
+            if (!base.ApplyStatus(status)) return false;
+            SendStatusUpdate(status);
+            return true;
+        }
+
+        /// <summary>
+        /// Remove a status from a creature, firing the appropriate OnEnd events and removing the icon from the status bar.
+        /// </summary>
+        /// <param name="status">The status to remove.</param>
+        /// <param name="onEnd">Whether or not to run the onEnd event for the status removal.</param>
+        protected override void _removeStatus(IPlayerStatus status, bool onEnd = true)
+        {
+            base._removeStatus(status, onEnd);
+            SendStatusUpdate(status, true);
+        }
+
+        /// <summary>
+        /// Process all the given status ticks for a creature's active statuses.
+        /// </summary>     
+        public override void ProcessStatusTicks()
+        {
+            // TODO: DRY this up when converted to interfaces / abstract classes
             foreach (var kvp in _currentStatuses)
             {
                 Logger.DebugFormat("OnTick: {0}, {1}", Name, kvp.Value.Name);
@@ -414,17 +386,14 @@ namespace Hybrasyl.Objects
             }
         }
 
-        public int ActiveStatusCount => _currentStatuses.Count;
-
-        /// <summary>T
-        /// Send a status bar update to the client based on the state of a given status.
+        /// <summary>
+        /// Send a status update to a player for a given IPlayerStatus.
         /// </summary>
-        /// <param name="status">The status to update on the client side.</param>
-        /// <param name="remove">Force removal of the status</param>
-
+        /// <param name="status"></param>
+        /// <param name="remove"></param>
         public virtual void SendStatusUpdate(IPlayerStatus status, bool remove = false)
         {
-            var statuspacket = new ServerPacketStructures.StatusBar {Icon = status.Icon};
+            var statuspacket = new ServerPacketStructures.StatusBar { Icon = status.Icon };
             var elapsed = DateTime.Now - status.Start;
             var remaining = status.Duration - elapsed.TotalSeconds;
             StatusBarColor color;
@@ -442,74 +411,11 @@ namespace Hybrasyl.Objects
             if (remove || status.Expired)
                 color = StatusBarColor.Off;
 
-            Logger.DebugFormat("StackTrace: '{0}'", Environment.StackTrace);
-
             statuspacket.BarColor = color;
             Logger.DebugFormat($"{Name} - status update - sending Icon: {statuspacket.Icon}, Color: {statuspacket.BarColor}");
             Logger.DebugFormat($"{Name} - status: {status.Name}, expired: {status.Expired}, remaining: {remaining}, duration: {status.Duration}");
             Enqueue(statuspacket.Packet());
         }
-
-        #region Toggles for statuses
-
-        /// <summary>
-        /// Toggle whether or not the user is frozen.
-        /// </summary>
-        public void ToggleFreeze()
-        {
-            Condition ^= PlayerCondition.Freeze;
-        }
-
-        /// <summary>
-        /// Toggle whether or not the user is asleep.
-        /// </summary>
-        public void ToggleAsleep()
-        {
-            Condition ^= PlayerCondition.Sleep;
-        }
-
-        /// <summary>
-        /// Toggle whether or not the user is blind.
-        /// </summary>
-        public void ToggleBlind()
-        {
-            Condition ^= PlayerCondition.Blind;
-            UpdateAttributes(StatUpdateFlags.Secondary);
-        }
-
-        /// <summary>
-        /// Toggle whether or not the user is paralyzed.
-        /// </summary>
-        public void ToggleParalyzed()
-        {
-            Condition ^= PlayerCondition.Paralyze;
-            UpdateAttributes(StatUpdateFlags.Secondary);
-        }
-
-        /// <summary>
-        /// Toggle whether or not the user is near death (in a coma).
-        /// </summary>
-        public void ToggleNearDeath()
-        {
-            if (Condition.HasFlag(PlayerCondition.Coma))
-            {
-                Condition &= ~PlayerCondition.Coma;
-                Group?.SendMessage($"{Name} has recovered!");
-            }
-            else
-                Condition |= PlayerCondition.Coma;
-        }
-
-        /// <summary>
-        /// Toggle whether or not a user is alive.
-        /// </summary>
-        public void ToggleAlive()
-        {
-            State ^= PlayerState.Alive;
-            UpdateAttributes(StatUpdateFlags.Secondary);
-        }
-
-        #endregion
 
         /// <summary>
         /// Sadly, all things in this world must come to an end.
@@ -523,7 +429,7 @@ namespace Hybrasyl.Objects
             RemoveAllStatuses();
 
             // We are now quite dead, not mostly dead
-            Condition &= ~PlayerCondition.Coma;
+            Condition &= ~CreatureCondition.Coma;
 
             // First: break everything that is breakable in the inventory
             for (byte i = 0; i <= Inventory.Size; ++i)
@@ -592,7 +498,7 @@ namespace Hybrasyl.Objects
         /// </summary>
         public void EndComa()
         {
-            if (!Condition.HasFlag(PlayerCondition.Coma)) return;
+            if (!Condition.HasFlag(CreatureCondition.Coma)) return;
             ToggleNearDeath();
             var bar = RemoveStatus(NearDeathStatus.Icon, false);
             Logger.Debug($"EndComa: {Name}: removestatus for coma is {bar}");
@@ -639,8 +545,6 @@ namespace Hybrasyl.Objects
 
 
         }
-
-        #endregion
 
         public string GroupText
         {
@@ -1599,7 +1503,7 @@ namespace Hybrasyl.Objects
             if (flags.HasFlag(StatUpdateFlags.Secondary))
             {
                 x08.WriteByte(0); //Unknown
-                x08.WriteByte((byte) (Condition.HasFlag(PlayerCondition.Blind) ? 0x08 : 0x00));
+                x08.WriteByte((byte) (Condition.HasFlag(CreatureCondition.Blind) ? 0x08 : 0x00));
                 x08.WriteByte(0); // Unknown
                 x08.WriteByte(0); // Unknown
                 x08.WriteByte(0); // Unknown
@@ -2118,7 +2022,7 @@ namespace Hybrasyl.Objects
         public override void Damage(double damage, Enums.Element element = Enums.Element.None,
             Enums.DamageType damageType = Enums.DamageType.Direct, Creature attacker = null)
         {
-            if (Condition.HasFlag(PlayerCondition.Coma) || !State.HasFlag(PlayerState.Alive)) return;
+            if (Condition.HasFlag(CreatureCondition.Coma) || !State.HasFlag(PlayerState.Alive)) return;
             base.Damage(damage, element, damageType, attacker);
             if (Hp == 0)
             {
@@ -2129,44 +2033,6 @@ namespace Hybrasyl.Objects
                     OnDeath();
             }
             UpdateAttributes(StatUpdateFlags.Current);
-        }
-
-        //below method might not be needed.
-        public override void Attack(Direction direction, Castable castObject = null, Creature target = null)
-        {
-            if (target != null)
-            {
-                var damage = castObject.Effects.Damage;
-
-                Random rand = new Random();
-
-                if (damage.Formula == null) //will need to be expanded. also will need to account for damage scripts
-                {
-                    var simple = damage.Simple;
-                    var damageType = EnumUtil.ParseEnum<Enums.DamageType>(damage.Type.ToString(),
-                        Enums.DamageType.Magical);
-                    var dmg = rand.Next(Convert.ToInt32(simple.Min), Convert.ToInt32(simple.Max));
-                        //these need to be set to integers as attributes. note to fix.
-                    target.Damage(dmg, OffensiveElement, damageType, this);
-                }
-                else
-                {
-                    var formula = damage.Formula;
-                    var damageType = EnumUtil.ParseEnum<Enums.DamageType>(damage.Type.ToString(),
-                        Enums.DamageType.Magical);
-                    FormulaParser parser = new FormulaParser(this, castObject, target);
-                    var dmg = parser.Eval(formula);
-                    if (dmg == 0) dmg = 1;
-                    target.Damage(dmg, OffensiveElement, damageType, this);
-                }
-                //var dmg = rand.Next(Convert.ToInt32(simple.Min), Convert.ToInt32(simple.Max));
-                    //these need to be set to integers as attributes. note to fix.
-                //target.Damage(dmg, OffensiveElement, damage.Type, this);
-            }
-            else
-            {
-                //var formula = damage.Formula;
-            }
         }
 
         public override void Attack(Castable castObject, Creature target = null)
@@ -2402,27 +2268,28 @@ namespace Hybrasyl.Objects
 
                     foreach (var target in actualTargets)
                     {
-                        if (target is Monster || (target is User && ((User)target).State.HasFlag(PlayerState.Pvp)))
+                        if (target is Monster || (target is User && ((User) target).State.HasFlag(PlayerState.Pvp)))
                         {
 
                             var rand = new Random();
 
-                            if (damage.Formula == null) //will need to be expanded. also will need to account for damage scripts
+                            if (damage.Formula == null && castObject.Effects.ScriptOverride != false)
                             {
+                                // Simple numeric damage
                                 var simple = damage.Simple;
                                 var damageType = EnumUtil.ParseEnum(damage.Type.ToString(), Enums.DamageType.Magical);
                                 var dmg = rand.Next(Convert.ToInt32(simple.Min), Convert.ToInt32(simple.Max));
                                 //these need to be set to integers as attributes. note to fix.
                                 target.Damage(dmg, OffensiveElement, damageType, this);
                             }
-                            else
+                            else if (damage.Formula != null && castObject.Effects.ScriptOverride == false)
                             {
+                                // Formulaic damage
                                 var formula = damage.Formula;
                                 var damageType = EnumUtil.ParseEnum(damage.Type.ToString(), Enums.DamageType.Magical);
                                 var parser = new FormulaParser(this, castObject, target);
                                 var dmg = parser.Eval(formula);
-                                if (dmg == 0) dmg = 1;
-                                target.Damage(dmg, OffensiveElement, damageType, this);
+                                if (dmg != 0) target.Damage(dmg, OffensiveElement, damageType, this);
 
                                 if (castObject.Effects.Animations.OnCast.Target == null) continue;
                                 var effectAnimation = new ServerPacketStructures.EffectAnimation()
@@ -2435,7 +2302,7 @@ namespace Hybrasyl.Objects
                                 Enqueue(effectAnimation.Packet());
                                 SendAnimation(effectAnimation.Packet());
                             }
-                            // Handle scripted castables
+                            
                             if (!string.IsNullOrEmpty(castObject.Script))
                             {
                                 Script castableScript;
@@ -2447,11 +2314,15 @@ namespace Hybrasyl.Objects
                                 }
 
                             }
+                            if (castObject.Effects.Statuses.Add.Count > 0)
+                            {
+                                
+                            }
+                            if (castObject.Effects.Statuses.Remove.Count > 0)
+                            {
+                                
+                            }
 
-                        }
-                        else
-                        {
-                            //var formula = damage.Formula;
                         }
                     }
                 }
