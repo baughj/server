@@ -179,7 +179,6 @@ namespace Hybrasyl
 
         public static string LocalizationDirectory => Path.Combine(DataDirectory, "world", "xml", "localization");
 
-
         public static bool TryGetUser(string name, out User userobj)
         {
             var jsonstring = (string)DatastoreConnection.GetDatabase().Get(User.GetStorageKey(name));
@@ -265,8 +264,8 @@ namespace Hybrasyl
             // refactored later, but it is way too much work to do now (e.g. maps, etc).
 
             //Load strings
-            foreach (var xml in Directory.GetFiles(LocalizationDirectory))
-            {
+            foreach (var xml in Directory.GetFiles(LocalizationDirectory, "*.xml"))
+            {              
                 try
                 {
                     Strings = Serializer.Deserialize(XmlReader.Create(xml), new Strings());
@@ -279,7 +278,7 @@ namespace Hybrasyl
             }
 
             //Load NPCs
-            foreach (var xml in Directory.GetFiles(NpcsDirectory))
+            foreach (var xml in Directory.GetFiles(NpcsDirectory, "*.xml"))
             {
                 try
                 {
@@ -294,7 +293,7 @@ namespace Hybrasyl
             }
 
             // Load maps
-            foreach (var xml in Directory.GetFiles(MapDirectory))
+            foreach (var xml in Directory.GetFiles(MapDirectory, "*.xml"))
             {
                 try
                 {
@@ -314,7 +313,7 @@ namespace Hybrasyl
             Logger.InfoFormat("Maps: {0} maps loaded", WorldData.Count<Map>());
 
             // Load nations
-            foreach (var xml in Directory.GetFiles(NationDirectory))
+            foreach (var xml in Directory.GetFiles(NationDirectory, "*.xml"))
             {
                 try
                 {
@@ -345,7 +344,7 @@ namespace Hybrasyl
             Logger.InfoFormat("National data: {0} nations loaded", WorldData.Count<Nation>());
 
             //Load Creatures
-            foreach (var xml in Directory.GetFiles(CreatureDirectory))
+            foreach (var xml in Directory.GetFiles(CreatureDirectory, "*.xml"))
             {
                 try
                 {
@@ -363,7 +362,7 @@ namespace Hybrasyl
 
 
             //Load SpawnGroups
-            foreach (var xml in Directory.GetFiles(SpawnGroupDirectory))
+            foreach (var xml in Directory.GetFiles(SpawnGroupDirectory, "*.xml"))
             {
                 try
                 {
@@ -381,7 +380,7 @@ namespace Hybrasyl
             }
 
             // Load worldmaps
-            foreach (var xml in Directory.GetFiles(WorldMapDirectory))
+            foreach (var xml in Directory.GetFiles(WorldMapDirectory, "*.xml"))
             {
                 try
                 {
@@ -405,7 +404,7 @@ namespace Hybrasyl
             Logger.InfoFormat("World Maps: {0} world maps loaded", WorldData.Count<WorldMap>());
 
             // Load item variants
-            foreach (var xml in Directory.GetFiles(ItemVariantDirectory))
+            foreach (var xml in Directory.GetFiles(ItemVariantDirectory, "*.xml"))
             {
                 try
                 {
@@ -423,13 +422,13 @@ namespace Hybrasyl
             Logger.InfoFormat("ItemObject variants: {0} variant sets loaded", WorldData.Values<VariantGroup>().Count());
 
             // Load items
-            foreach (var xml in Directory.GetFiles(ItemDirectory))
+            foreach (var xml in Directory.GetFiles(ItemDirectory, "*.xml"))
             {
                 try
                 {
                     Item newItem = Serializer.Deserialize(XmlReader.Create(xml), new Item());
                     Logger.DebugFormat("Items: loaded {0}, id {1}", newItem.Name, newItem.Id);
-                    WorldData.SetWithIndex(newItem.Id, newItem, new Tuple<Sex, string>(Sex.Neutral, newItem.Name));
+                    WorldData.SetWithIndex(newItem.Id, newItem,  newItem.Name);
                     // Handle some null cases; there's probably a nicer way to do this
                     if (newItem.Properties.StatEffects.Combat == null) { newItem.Properties.StatEffects.Combat = new StatEffectsCombat(); }
                     if (newItem.Properties.StatEffects.Element == null) { newItem.Properties.StatEffects.Element = new StatEffectsElement(); }
@@ -458,7 +457,7 @@ namespace Hybrasyl
                 }
             }
 
-            foreach (var xml in Directory.GetFiles(CastableDirectory))
+            foreach (var xml in Directory.GetFiles(CastableDirectory, "*.xml"))
             {
                 try
                 {
@@ -512,24 +511,27 @@ namespace Hybrasyl
 
             // Ensure global boards exist and are up to date with anything specified in the config
 
-            foreach (var globalboard in Game.Config.Boards)
+            if (Game.Config.Boards != null)
             {
-                var board = GetBoard(globalboard.Name);
-                board.DisplayName = globalboard.DisplayName;
-                foreach (var reader in globalboard.AccessList.Read)
+                foreach (var globalboard in Game.Config.Boards)
                 {
-                    board.SetAccessLevel(Convert.ToString(reader), BoardAccessLevel.Read);
+                    var board = GetBoard(globalboard.Name);
+                    board.DisplayName = globalboard.DisplayName;
+                    foreach (var reader in globalboard.AccessList.Read)
+                    {
+                        board.SetAccessLevel(Convert.ToString(reader), BoardAccessLevel.Read);
+                    }
+                    foreach (var writer in globalboard.AccessList.Write)
+                    {
+                        board.SetAccessLevel(Convert.ToString(writer), BoardAccessLevel.Write);
+                    }
+                    foreach (var moderator in globalboard.AccessList.Moderate)
+                    {
+                        board.SetAccessLevel(Convert.ToString(moderator), BoardAccessLevel.Moderate);
+                    }
+                    Logger.InfoFormat("Boards: Global board {0} initialized", globalboard.Name);
+                    board.Save();
                 }
-                foreach (var writer in globalboard.AccessList.Write)
-                {
-                    board.SetAccessLevel(Convert.ToString(writer), BoardAccessLevel.Write);
-                }
-                foreach (var moderator in globalboard.AccessList.Moderate)
-                {
-                    board.SetAccessLevel(Convert.ToString(moderator), BoardAccessLevel.Moderate);
-                }
-                Logger.InfoFormat("Boards: Global board {0} initialized", globalboard.Name);
-                board.Save();
             }
             return true;
         }
@@ -539,64 +541,132 @@ namespace Hybrasyl
             var variantItem = item.Clone();
 
             variantItem.Name = $"{variant.Modifier} {item.Name}";
+            Logger.Debug($"Processing variant: {variantItem.Name}");
             variantItem.Properties.Flags = variant.Properties.Flags;
-
+                    
             variantItem.Properties.Physical.Value = variant.Properties.Physical.Value == 100 ? item.Properties.Physical.Value : Convert.ToUInt32(Math.Round(item.Properties.Physical.Value * (variant.Properties.Physical.Value * .01)));
             variantItem.Properties.Physical.Durability = variant.Properties.Physical.Durability == 100 ? item.Properties.Physical.Durability : Convert.ToUInt32(Math.Round(item.Properties.Physical.Durability * (variant.Properties.Physical.Durability * .01)));
             variantItem.Properties.Physical.Weight = variant.Properties.Physical.Weight == 100 ? item.Properties.Physical.Weight : Convert.ToInt32(Math.Round(item.Properties.Physical.Weight * (variant.Properties.Physical.Weight * .01)));
 
-            switch (variantGroup)
+            // Ensure all our modifiable / referenced properties at least exist
+            // TODO: this is pretty hacky
+            if (variantItem.Properties.Restrictions.Level is null)
+                variantItem.Properties.Restrictions.Level = new RestrictionsLevel();
+
+            if (variantItem.Properties.StatEffects is null)
+                variantItem.Properties.StatEffects = new StatEffects()
+                {
+                    Base = new StatEffectsBase(),
+                    Element = new StatEffectsElement(),
+                    Combat = new StatEffectsCombat()
+                };
+
+            if (variantItem.Properties.Damage is null)
+            {
+                variantItem.Properties.Damage = new Items.Damage()
+                {
+                    Large = new DamageLarge(),
+                    Small = new DamageSmall()
+                };
+            }
+
+            if (variantItem.Properties.Damage.Large is null)
+                variantItem.Properties.Damage.Large = new DamageLarge();
+
+            if (variantItem.Properties.Damage.Small is null)
+                variantItem.Properties.Damage.Small = new DamageSmall();
+
+            if (item.Properties.Damage is null)
+            {
+                item.Properties.Damage = new Items.Damage()
+                {
+                    Large = new DamageLarge(),
+                    Small = new DamageSmall()
+                };
+            }
+
+            switch (variantGroup.ToLower())
             {
                 case "consecratable":
                     {
-                        variantItem.Properties.Restrictions.Level.Min += variant.Properties.Restrictions.Level.Min;
-                        variantItem.Properties.StatEffects.Base.Dex += variant.Properties.StatEffects.Base.Dex;
-                        variantItem.Properties.StatEffects.Base.Con += variant.Properties.StatEffects.Base.Con;
-                        variantItem.Properties.StatEffects.Base.Str += variant.Properties.StatEffects.Base.Str;
-                        variantItem.Properties.StatEffects.Base.Wis += variant.Properties.StatEffects.Base.Wis;
-                        variantItem.Properties.StatEffects.Base.Int += variant.Properties.StatEffects.Base.Int;
+                        if (variant.Properties.Restrictions?.Level != null) variantItem.Properties.Restrictions.Level.Min += variant.Properties.Restrictions.Level.Min;
+                        if (variant.Properties.StatEffects?.Base != null)
+                        {
+                            variantItem.Properties.StatEffects.Base.Dex += variant.Properties.StatEffects.Base.Dex;
+                            variantItem.Properties.StatEffects.Base.Con += variant.Properties.StatEffects.Base.Con;
+                            variantItem.Properties.StatEffects.Base.Str += variant.Properties.StatEffects.Base.Str;
+                            variantItem.Properties.StatEffects.Base.Wis += variant.Properties.StatEffects.Base.Wis;
+                            variantItem.Properties.StatEffects.Base.Int += variant.Properties.StatEffects.Base.Int;
+                        }
                         break;
                     }
                 case "elemental":
                     {
-                        variantItem.Properties.StatEffects.Element.Offense = variant.Properties.StatEffects.Element.Offense;
-                        variantItem.Properties.StatEffects.Element.Defense = variant.Properties.StatEffects.Element.Defense;
+                        if (variant.Properties.StatEffects?.Element != null)
+                        { 
+                            variantItem.Properties.StatEffects.Element.Offense = variant.Properties.StatEffects.Element.Offense;
+                            variantItem.Properties.StatEffects.Element.Defense = variant.Properties.StatEffects.Element.Defense;
+                        }
                         break;
                     }
                 case "enchantable":
                     {
-                        variantItem.Properties.Restrictions.Level.Min += variant.Properties.Restrictions.Level.Min;
-                        variantItem.Properties.StatEffects.Combat.Ac = (sbyte)(item.Properties.StatEffects.Combat.Ac + variant.Properties.StatEffects.Combat.Ac);
-                        variantItem.Properties.StatEffects.Combat.Dmg += variant.Properties.StatEffects.Combat.Dmg;
-                        variantItem.Properties.StatEffects.Combat.Hit += variant.Properties.StatEffects.Combat.Hit;
-                        variantItem.Properties.StatEffects.Combat.Mr += variant.Properties.StatEffects.Combat.Mr;
-                        variantItem.Properties.StatEffects.Combat.Regen += variant.Properties.StatEffects.Combat.Regen;
-                        variantItem.Properties.StatEffects.Base.Dex += variant.Properties.StatEffects.Base.Dex;
-                        variantItem.Properties.StatEffects.Base.Str += variant.Properties.StatEffects.Base.Str;
-                        variantItem.Properties.StatEffects.Base.Wis += variant.Properties.StatEffects.Base.Wis;
-                        variantItem.Properties.StatEffects.Base.Con += variant.Properties.StatEffects.Base.Con;
-                        variantItem.Properties.StatEffects.Base.Int += variant.Properties.StatEffects.Base.Int;
-                        variantItem.Properties.StatEffects.Base.Hp += variant.Properties.StatEffects.Base.Hp;
-                        variantItem.Properties.StatEffects.Base.Mp += variant.Properties.StatEffects.Base.Mp;
+                        if (variant.Properties.Restrictions?.Level != null)
+                        {
+                            variantItem.Properties.Restrictions.Level.Min += variant.Properties.Restrictions.Level.Min;
+                        }
+                        if (variant.Properties.StatEffects?.Combat != null)
+                        { 
+                            variantItem.Properties.StatEffects.Combat.Ac = (sbyte)(item.Properties.StatEffects.Combat.Ac + variant.Properties.StatEffects.Combat.Ac);
+                            variantItem.Properties.StatEffects.Combat.Dmg += variant.Properties.StatEffects.Combat.Dmg;
+                            variantItem.Properties.StatEffects.Combat.Hit += variant.Properties.StatEffects.Combat.Hit;
+                            variantItem.Properties.StatEffects.Combat.Mr += variant.Properties.StatEffects.Combat.Mr;
+                            variantItem.Properties.StatEffects.Combat.Regen += variant.Properties.StatEffects.Combat.Regen;
+                        }
+                        if (variant.Properties.StatEffects?.Base != null)
+                        {
+                            variantItem.Properties.StatEffects.Base.Dex += variant.Properties.StatEffects.Base.Dex;
+                            variantItem.Properties.StatEffects.Base.Str += variant.Properties.StatEffects.Base.Str;
+                            variantItem.Properties.StatEffects.Base.Wis += variant.Properties.StatEffects.Base.Wis;
+                            variantItem.Properties.StatEffects.Base.Con += variant.Properties.StatEffects.Base.Con;
+                            variantItem.Properties.StatEffects.Base.Int += variant.Properties.StatEffects.Base.Int;
+                            variantItem.Properties.StatEffects.Base.Hp += variant.Properties.StatEffects.Base.Hp;
+                            variantItem.Properties.StatEffects.Base.Mp += variant.Properties.StatEffects.Base.Mp;
+                        }
                         break;
                     }
                 case "smithable":
                     {
-                        variantItem.Properties.Restrictions.Level.Min += variant.Properties.Restrictions.Level.Min;
-                        variantItem.Properties.Damage.Large.Min = Convert.ToUInt16(Math.Round(item.Properties.Damage.Large.Min * (variant.Properties.Damage.Large.Min * .01)));
-                        variantItem.Properties.Damage.Large.Max = Convert.ToUInt16(Math.Round(item.Properties.Damage.Large.Max * (variant.Properties.Damage.Large.Max * .01)));
-                        variantItem.Properties.Damage.Small.Min = Convert.ToUInt16(Math.Round(item.Properties.Damage.Small.Min * (variant.Properties.Damage.Small.Min * .01)));
-                        variantItem.Properties.Damage.Small.Max = Convert.ToUInt16(Math.Round(item.Properties.Damage.Small.Max * (variant.Properties.Damage.Small.Max * .01)));
+                        if (variant.Properties.Restrictions?.Level != null)
+                        {
+                            variantItem.Properties.Restrictions.Level.Min += variant.Properties.Restrictions.Level.Min;
+                        }
+                        if (variant.Properties.Damage?.Large != null)
+                        { 
+                            variantItem.Properties.Damage.Large.Min = Convert.ToUInt16(Math.Round(item.Properties.Damage.Large.Min * (variant.Properties.Damage.Large.Min * .01)));
+                            variantItem.Properties.Damage.Large.Max = Convert.ToUInt16(Math.Round(item.Properties.Damage.Large.Max * (variant.Properties.Damage.Large.Max * .01)));
+                        }
+                        if (variant.Properties.Damage?.Small != null)
+                        { 
+                            variantItem.Properties.Damage.Small.Min = Convert.ToUInt16(Math.Round(item.Properties.Damage.Small.Min * (variant.Properties.Damage.Small.Min * .01)));
+                            variantItem.Properties.Damage.Small.Max = Convert.ToUInt16(Math.Round(item.Properties.Damage.Small.Max * (variant.Properties.Damage.Small.Max * .01)));
+}
                         break;
                     }
                 case "tailorable":
                     {
-                        variantItem.Properties.Restrictions.Level.Min += variant.Properties.Restrictions.Level.Min;
-                        variantItem.Properties.StatEffects.Combat.Ac = (sbyte)(item.Properties.StatEffects.Combat.Ac + variant.Properties.StatEffects.Combat.Ac);
-                        variantItem.Properties.StatEffects.Combat.Dmg += variant.Properties.StatEffects.Combat.Dmg;
-                        variantItem.Properties.StatEffects.Combat.Hit += variant.Properties.StatEffects.Combat.Hit;
-                        variantItem.Properties.StatEffects.Combat.Mr += variant.Properties.StatEffects.Combat.Mr;
-                        variantItem.Properties.StatEffects.Combat.Regen += variant.Properties.StatEffects.Combat.Regen;
+                        if (variant.Properties.Restrictions?.Level != null)
+                        {
+                            variantItem.Properties.Restrictions.Level.Min += variant.Properties.Restrictions.Level.Min;
+                        }
+                        if (variant.Properties.StatEffects?.Combat != null)
+                        { 
+                            variantItem.Properties.StatEffects.Combat.Ac = (sbyte)(item.Properties.StatEffects.Combat.Ac + variant.Properties.StatEffects.Combat.Ac);
+                            variantItem.Properties.StatEffects.Combat.Dmg += variant.Properties.StatEffects.Combat.Dmg;
+                            variantItem.Properties.StatEffects.Combat.Hit += variant.Properties.StatEffects.Combat.Hit;
+                            variantItem.Properties.StatEffects.Combat.Mr += variant.Properties.StatEffects.Combat.Mr;
+                            variantItem.Properties.StatEffects.Combat.Regen += variant.Properties.StatEffects.Combat.Regen;
+                        }
                         break;
                     }
                 default:
@@ -818,47 +888,89 @@ namespace Hybrasyl
                     MerchantMenuItem.BuyItemMenu,
                     new MerchantMenuHandler(MerchantJob.Vend, MerchantMenuHandler_BuyItemMenu)
                 },
-                {MerchantMenuItem.BuyItem, new MerchantMenuHandler(MerchantJob.Vend, MerchantMenuHandler_BuyItem)},
+                //{MerchantMenuItem.BuyItem, new MerchantMenuHandler(MerchantJob.Vend, MerchantMenuHandler_BuyItem)},
                 {
                     MerchantMenuItem.BuyItemQuantity,
                     new MerchantMenuHandler(MerchantJob.Vend, MerchantMenuHandler_BuyItemWithQuantity)
                 },
                 {
-                    MerchantMenuItem.SellItemMenu,
-                    new MerchantMenuHandler(MerchantJob.Vend, MerchantMenuHandler_SellItemMenu)
-                },
-                {MerchantMenuItem.SellItem, new MerchantMenuHandler(MerchantJob.Vend, MerchantMenuHandler_SellItem)},
-                {
-                    MerchantMenuItem.SellItemQuantity,
-                    new MerchantMenuHandler(MerchantJob.Vend, MerchantMenuHandler_SellItemWithQuantity)
+                  MerchantMenuItem.BuyItemAccept, new MerchantMenuHandler(MerchantJob.Vend, MerchantMenuHandler_BuyItemAccept)  
                 },
                 {
-                    MerchantMenuItem.SellItemAccept,
-                    new MerchantMenuHandler(MerchantJob.Vend, MerchantMenuHandler_SellItemConfirmation)
+                    MerchantMenuItem.SellItemMenu, new MerchantMenuHandler(MerchantJob.Vend, MerchantMenuHandler_SellItemMenu)
+                },
+                { MerchantMenuItem.SellItem, new MerchantMenuHandler(MerchantJob.Vend, MerchantMenuHandler_SellItem)},
+                {
+                    MerchantMenuItem.SellItemQuantity, new MerchantMenuHandler(MerchantJob.Vend, MerchantMenuHandler_SellItemWithQuantity)
                 },
                 {
-                    MerchantMenuItem.LearnSkillMenu, new MerchantMenuHandler(MerchantJob.Train, MerchantMenuHandler_LearnSkill)
+                    MerchantMenuItem.SellItemConfirm, new MerchantMenuHandler(MerchantJob.Vend, MerchantMenuHandler_SellItemConfirmation)
                 },
                 {
-                    MerchantMenuItem.LearnSpellMenu, new MerchantMenuHandler(MerchantJob.Train, MerchantMenuHandler_LearnSpell)
+                    MerchantMenuItem.SellItemAccept, new MerchantMenuHandler(MerchantJob.Vend, MerchantMenuHandler_SellItemAccept)
                 },
                 {
-                    MerchantMenuItem.ForgetSkillMenu, new MerchantMenuHandler(MerchantJob.Train, MerchantMenuHandler_ForgetSkill)
+                    MerchantMenuItem.LearnSkillMenu, new MerchantMenuHandler(MerchantJob.Skills, MerchantMenuHandler_LearnSkillMenu)
                 },
                 {
-                    MerchantMenuItem.ForgetSpellMenu, new MerchantMenuHandler(MerchantJob.Train, MerchantMenuHandler_ForgetSpell)
+                    MerchantMenuItem.LearnSpellMenu, new MerchantMenuHandler(MerchantJob.Spells, MerchantMenuHandler_LearnSpellMenu)
                 },
                 {
-                    MerchantMenuItem.LearnSkillAccept, new MerchantMenuHandler(MerchantJob.Train, MerchantMenuHandler_LearnSkillAccept)
+                    MerchantMenuItem.ForgetSkillMenu, new MerchantMenuHandler(MerchantJob.Skills, MerchantMenuHandler_ForgetSkillMenu)
                 },
                 {
-                    MerchantMenuItem.LearnSpellAccept, new MerchantMenuHandler(MerchantJob.Train, MerchantMenuHandler_LearnSpellAccept)
+                    MerchantMenuItem.ForgetSpellMenu, new MerchantMenuHandler(MerchantJob.Spells, MerchantMenuHandler_ForgetSpellMenu)
                 },
                 {
-                    MerchantMenuItem.ForgetSkillAccept, new MerchantMenuHandler(MerchantJob.Train, MerchantMenuHandler_ForgetSkillAccept)
+                    MerchantMenuItem.LearnSkill, new MerchantMenuHandler(MerchantJob.Skills, MerchantMenuHandler_LearnSkill)
                 },
                 {
-                    MerchantMenuItem.ForgetSpellAccept, new MerchantMenuHandler(MerchantJob.Train, MerchantMenuHandler_ForgetSpellAccept)
+                    MerchantMenuItem.LearnSpell, new MerchantMenuHandler(MerchantJob.Spells, MerchantMenuHandler_LearnSpell)
+                },
+                {
+                    MerchantMenuItem.ForgetSkill, new MerchantMenuHandler(MerchantJob.Skills, MerchantMenuHandler_ForgetSkill)
+                },
+                {
+                    MerchantMenuItem.ForgetSpell, new MerchantMenuHandler(MerchantJob.Spells, MerchantMenuHandler_ForgetSpell)
+                },
+                {
+                    MerchantMenuItem.LearnSkillAccept, new MerchantMenuHandler(MerchantJob.Skills, MerchantMenuHandler_LearnSkillAccept)
+                },
+                {
+                    MerchantMenuItem.LearnSkillAgree, new MerchantMenuHandler(MerchantJob.Skills, MerchantMenuHandler_LearnSkillAgree)
+                },
+                {
+                    MerchantMenuItem.LearnSkillDisagree, new MerchantMenuHandler(MerchantJob.Skills, MerchantMenuHandler_LearnSkillDisagree)
+                },
+                {
+                    MerchantMenuItem.LearnSpellAccept, new MerchantMenuHandler(MerchantJob.Spells, MerchantMenuHandler_LearnSpellAccept)
+                },
+                {
+                    MerchantMenuItem.ForgetSkillAccept, new MerchantMenuHandler(MerchantJob.Skills, MerchantMenuHandler_ForgetSkillAccept)
+                },
+                {
+                    MerchantMenuItem.ForgetSpellAccept, new MerchantMenuHandler(MerchantJob.Spells, MerchantMenuHandler_ForgetSpellAccept)
+                },
+                {
+                    MerchantMenuItem.LearnSpellAgree, new MerchantMenuHandler(MerchantJob.Spells, MerchantMenuHandler_LearnSpellAgree)
+                },
+                {
+                    MerchantMenuItem.LearnSpellDisagree, new MerchantMenuHandler(MerchantJob.Spells, MerchantMenuHandler_LearnSpellDisagree)
+                },
+                {
+                    MerchantMenuItem.SendParcelMenu, new MerchantMenuHandler(MerchantJob.Post, MerchantMenuHandler_SendParcelMenu)
+                },
+                {
+                    MerchantMenuItem.SendParcelAccept, new MerchantMenuHandler(MerchantJob.Post, MerchantMenuHandler_SendParcelAccept)
+                },
+                {
+                    MerchantMenuItem.SendParcel, new MerchantMenuHandler(MerchantJob.Post, MerchantMenuHandler_SendParcel)
+                },
+                {
+                    MerchantMenuItem.SendParcelRecipient, new MerchantMenuHandler(MerchantJob.Post, MerchantMenuHandler_SendParcelRecipient)
+                },
+                {
+                    MerchantMenuItem.SendParcelFailure, new MerchantMenuHandler(MerchantJob.Post, MerchantMenuHandler_SendParcelFailure)
                 },
 
             };
@@ -2346,7 +2458,7 @@ namespace Hybrasyl
         private void PacketHandler_0x13_Attack(object obj, ClientPacket packet)
         {
             var user = (User)obj;
-            user.AssailAttack(user.Direction);
+            if(!user.CheckSquelch(0x13, null)) user.AssailAttack(user.Direction);
         }
 
         private void PacketHandler_0x18_ShowPlayerList(Object obj, ClientPacket packet)
@@ -3888,11 +4000,11 @@ namespace Hybrasyl
         {
             string name = packet.ReadString8();
 
-            if (!merchant.Inventory.ContainsKey(name))
-            {
-                user.ShowMerchantGoBack(merchant, "I do not sell that item.", MerchantMenuItem.BuyItemMenu);
-                return;
-            }
+            //if (!merchant.Inventory.ContainsKey(name))
+            //{
+            //    user.ShowMerchantGoBack(merchant, "I do not sell that item.", MerchantMenuItem.BuyItemMenu);
+            //    return;
+            //}
 
             var template = merchant.Inventory[name];
 
@@ -3935,65 +4047,12 @@ namespace Hybrasyl
             string name = packet.ReadString8();
             string qStr = packet.ReadString8();
 
-            if (!merchant.Inventory.ContainsKey(name))
-            {
-                user.ShowMerchantGoBack(merchant, "I do not sell that item.", MerchantMenuItem.BuyItemMenu);
-                return;
-            }
+            user.ShowBuyMenuQuantity(merchant, name);
+        }
 
-            var template = merchant.Inventory[name];
-
-            if (!template.Stackable) return;
-
-            int quantity;
-            if (!int.TryParse(qStr, out quantity) || quantity < 1)
-            {
-                user.ShowBuyMenuQuantity(merchant, name);
-                return;
-            }
-
-            uint cost = (uint)(template.Properties.Physical.Value * quantity);
-
-            if (user.Gold < cost)
-            {
-                user.ShowMerchantGoBack(merchant, "You do not have enough gold.", MerchantMenuItem.BuyItemMenu);
-                return;
-            }
-
-            if (quantity > template.Properties.Stackable.Max)
-            {
-                user.ShowMerchantGoBack(merchant, string.Format("You cannot hold that many {0}.", name),
-                    MerchantMenuItem.BuyItemMenu);
-                return;
-            }
-
-            if (user.Inventory.Contains(name))
-            {
-                byte slot = user.Inventory.SlotOf(name);
-                if (user.Inventory[slot].Count + quantity > template.Properties.Stackable.Max)
-                {
-                    user.ShowMerchantGoBack(merchant, string.Format("You cannot hold that many {0}.", name),
-                        MerchantMenuItem.BuyItemMenu);
-                    return;
-                }
-                user.IncreaseItem(slot, quantity);
-            }
-            else
-            {
-                if (user.Inventory.IsFull)
-                {
-                    user.ShowMerchantGoBack(merchant, "You cannot carry any more items.", MerchantMenuItem.BuyItemMenu);
-                    return;
-                }
-
-                var item = CreateItem(template.Id, quantity);
-                Insert(item);
-                user.AddItem(item);
-            }
-
-            user.RemoveGold(cost);
-            user.UpdateAttributes(StatUpdateFlags.Experience);
-            user.ShowBuyMenu(merchant);
+        private void MerchantMenuHandler_BuyItemAccept(User user, Merchant merchant, ClientPacket packet)
+        {
+            user.ShowBuyItem(merchant);
         }
 
         private void MerchantMenuHandler_SellItem(User user, Merchant merchant, ClientPacket packet)
@@ -4001,13 +4060,6 @@ namespace Hybrasyl
             byte slot = packet.ReadByte();
 
             var item = user.Inventory[slot];
-            if (item == null) return;
-
-            if (!merchant.Inventory.ContainsKey(item.Name))
-            {
-                user.ShowMerchantGoBack(merchant, "I do not want that item.", MerchantMenuItem.SellItemMenu);
-                return;
-            }
 
             if (item.Stackable && item.Count > 1)
             {
@@ -4015,17 +4067,16 @@ namespace Hybrasyl
                 return;
             }
 
-            user.ShowSellConfirm(merchant, slot, 1);
+            user.ShowSellConfirm(merchant, slot);
         }
 
         private void MerchantMenuHandler_SellItemWithQuantity(User user, Merchant merchant, ClientPacket packet)
         {
-            packet.ReadByte();
             byte slot = packet.ReadByte();
-            string qStr = packet.ReadString8();
+            byte quantity = packet.ReadByte();
 
-            int quantity;
-            if (!int.TryParse(qStr, out quantity) || quantity < 1)
+            
+            if (quantity < 1)
             {
                 user.ShowSellQuantity(merchant, slot);
                 return;
@@ -4034,17 +4085,17 @@ namespace Hybrasyl
             var item = user.Inventory[slot];
             if (item == null || !item.Stackable) return;
 
-            if (!merchant.Inventory.ContainsKey(item.Name))
-            {
-                user.ShowMerchantGoBack(merchant, "I do not want that item.", MerchantMenuItem.SellItemMenu);
-                return;
-            }
+            //if (!merchant.Inventory.ContainsKey(item.Name))
+            //{
+            //    user.ShowMerchantGoBack(merchant, "I do not want that item.", MerchantMenuItem.SellItemMenu);
+            //    return;
+            //}
 
-            if (item.Count < quantity)
-            {
-                user.ShowMerchantGoBack(merchant, "You don't have that many to sell.", MerchantMenuItem.SellItemMenu);
-                return;
-            }
+            //if (item.Count < quantity)
+            //{
+            //    user.ShowMerchantGoBack(merchant, "You don't have that many to sell.", MerchantMenuItem.SellItemMenu);
+            //    return;
+            //}
 
             user.ShowSellConfirm(merchant, slot, quantity);
         }
@@ -4081,38 +4132,110 @@ namespace Hybrasyl
             merchant.DisplayPursuits(user);
         }
 
+        private void MerchantMenuHandler_SellItemAccept(User user, Merchant merchant, ClientPacket packet)
+        {
+            user.SellItemAccept(merchant);
+        }
+
+        private void MerchantMenuHandler_LearnSkillMenu(User user, Merchant merchant, ClientPacket packet)
+        {
+            user.ShowLearnSkillMenu(merchant);
+        }
         private void MerchantMenuHandler_LearnSkill(User user, Merchant merchant, ClientPacket packet)
         {
-            
+            var skillName = packet.ReadString8(); //skill name
+            var skill = WorldData.GetByIndex<Castable>(skillName);
+            user.ShowLearnSkill(merchant, skill);
         }
         private void MerchantMenuHandler_LearnSkillAccept(User user, Merchant merchant, ClientPacket packet)
         {
-
+            user.ShowLearnSkillAccept(merchant);
         }
 
-        private void MerchantMenuHandler_LearnSpell(User user, Merchant merchant, ClientPacket packet)
+        private void MerchantMenuHandler_LearnSkillAgree(User user, Merchant merchant, ClientPacket packet)
         {
             
+            user.ShowLearnSkillAgree(merchant);
+        }
+
+        private void MerchantMenuHandler_LearnSkillDisagree(User user, Merchant merchant, ClientPacket packet)
+        {
+            user.ShowLearnSkillDisagree(merchant);
+        }
+
+        private void MerchantMenuHandler_LearnSpellMenu(User user, Merchant merchant, ClientPacket packet)
+        {
+            user.ShowLearnSpellMenu(merchant);
+        }
+        private void MerchantMenuHandler_LearnSpell(User user, Merchant merchant, ClientPacket packet)
+        {
+            var spellName = packet.ReadString8();
+            var spell = WorldData.GetByIndex<Castable>(spellName);
+            user.ShowLearnSpell(merchant, spell);
         }
         private void MerchantMenuHandler_LearnSpellAccept(User user, Merchant merchant, ClientPacket packet)
         {
+            user.ShowLearnSpellAccept(merchant);
+        }
+        private void MerchantMenuHandler_LearnSpellAgree(User user, Merchant merchant, ClientPacket packet)
+        {
+            user.ShowLearnSpellAgree(merchant);
+        }
+        private void MerchantMenuHandler_LearnSpellDisagree(User user, Merchant merchant, ClientPacket packet)
+        {
+            user.ShowLearnSpellDisagree(merchant);
+        }
 
+        private void MerchantMenuHandler_ForgetSkillMenu(User user, Merchant merchant, ClientPacket packet)
+        {
+            user.ShowForgetSkillMenu(merchant);
         }
         private void MerchantMenuHandler_ForgetSkill(User user, Merchant merchant, ClientPacket packet)
         {
-            
+
         }
         private void MerchantMenuHandler_ForgetSkillAccept(User user, Merchant merchant, ClientPacket packet)
         {
-
+            var slot = packet.ReadByte();
+            
+            user.ShowForgetSkillAccept(merchant, slot);
+        }
+        private void MerchantMenuHandler_ForgetSpellMenu(User user, Merchant merchant, ClientPacket packet)
+        {
+            
         }
         private void MerchantMenuHandler_ForgetSpell(User user, Merchant merchant, ClientPacket packet)
         {
-            
+
         }
         private void MerchantMenuHandler_ForgetSpellAccept(User user, Merchant merchant, ClientPacket packet)
         {
 
+        }
+
+        private void MerchantMenuHandler_SendParcelMenu(User user, Merchant merchant, ClientPacket packet)
+        {
+            user.ShowMerchantSendParcel(merchant);
+        }
+        private void MerchantMenuHandler_SendParcelRecipient(User user, Merchant merchant, ClientPacket packet)
+        {
+            var item = packet.ReadByte();
+            var itemObj = user.Inventory[item];
+            user.ShowMerchantSendParcelRecipient(merchant, itemObj);
+        }
+        private void MerchantMenuHandler_SendParcel(User user, Merchant merchant, ClientPacket packet)
+        {
+
+        }
+
+        private void MerchantMenuHandler_SendParcelFailure(User user, Merchant merchant, ClientPacket packet)
+        {
+            
+        }
+        private void MerchantMenuHandler_SendParcelAccept(User user, Merchant merchant, ClientPacket packet)
+        {
+            var recipient = packet.ReadString8();
+            user.ShowMerchantSendParcelAccept(merchant, recipient);
         }
         #endregion Merchant Menu ItemObject Handlers
 

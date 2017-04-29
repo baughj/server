@@ -217,7 +217,6 @@ namespace Hybrasyl
                 else if (warpElement.WorldMapTarget != string.Empty)
                 {
                     // worldmap warp
-                    Logger.Info("LOADED WORLD WARP YO");
                     warp.DestinationMapName = warpElement.WorldMapTarget;
                     warp.WarpType = WarpType.WorldMap;
                 }
@@ -257,8 +256,14 @@ namespace Hybrasyl
                     if (npcTemplate.Roles.Post != null) { merchant.Jobs ^= MerchantJob.Post; }
                     if (npcTemplate.Roles.Bank != null) { merchant.Jobs ^= MerchantJob.Bank; }
                     if (npcTemplate.Roles.Repair != null) { merchant.Jobs ^= MerchantJob.Repair; }
-                    if (npcTemplate.Roles.Train != null) { merchant.Jobs ^= MerchantJob.Train; }
+                    if (npcTemplate.Roles.Train != null)
+                    {
+                        if(npcTemplate.Roles.Train.Any(x=>x.Type=="Skill")) merchant.Jobs ^= MerchantJob.Skills;
+                        if (npcTemplate.Roles.Train.Any(x => x.Type == "Spell")) merchant.Jobs ^= MerchantJob.Spells;
+                    }
                     if (npcTemplate.Roles.Vend != null) { merchant.Jobs ^= MerchantJob.Vend; }
+
+                    merchant.Roles = npcTemplate.Roles;
                 }
                 InsertNpc(merchant);
             }
