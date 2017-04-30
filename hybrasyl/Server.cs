@@ -142,24 +142,24 @@ namespace Hybrasyl
                 x7E.WriteByte(0x1B);
                 x7E.WriteString("CONNECTED SERVER\n");
                 client.Enqueue(x7E);
-                Logger.InfoFormat("Lobby: AcceptConnection occuring");
-                Logger.InfoFormat("Lobby: cid is {0}", client.ConnectionId);
+                Logger.Debug("Lobby: AcceptConnection occuring");
+                Logger.Debug($"Lobby: cid is {client.ConnectionId}");
             }
             else if (this is Login)
             {
-                Logger.InfoFormat("Login: AcceptConnection occuring");
-                Logger.InfoFormat("Login: cid is {0}", client.ConnectionId);
+                Logger.Debug("Login: AcceptConnection occuring");
+                Logger.Debug($"Login: cid is {client.ConnectionId}");
             }
             else if (this is World)
             {
-                Logger.InfoFormat("World: AcceptConnection occuring");
-                Logger.InfoFormat("World: cid is {0}", client.ConnectionId);
+                Logger.Debug("World: AcceptConnection occuring");
+                Logger.Debug($"World: cid is {client.ConnectionId}");
             }
             try
             {
                 handler.BeginReceive(client.ClientState.Buffer, 0, client.ClientState.Buffer.Length, 0,
                     new AsyncCallback(ReadCallback), client.ClientState);
-                Logger.InfoFormat("AcceptConnection returning");
+                Logger.Debug("AcceptConnection returning");
                 clientSocket.BeginAccept(new AsyncCallback(AcceptConnection), clientSocket);
             }
             catch (SocketException)
@@ -173,7 +173,6 @@ namespace Hybrasyl
 
             ClientState state = (ClientState) ar.AsyncState;
             Client client;
-            Logger.InfoFormat("EndSend");
             try
             {
                 SocketError errorCode;
@@ -212,10 +211,6 @@ namespace Hybrasyl
             SocketError errorCode;
             int bytesRead = 0;
 
-            if (this is Login)
-            {
-                Logger.InfoFormat("This is a login ReadCallback");
-            }
             try
             {
                 bytesRead = state.WorkSocket.EndReceive(ar, out errorCode);
@@ -251,7 +246,7 @@ namespace Hybrasyl
 
             if (bytesRead > 0)
             {
-           
+
                 var inboundBytes = state.ReceiveBufferTake(bytesRead).ToArray();
                 if (inboundBytes[0] != 0xAA)
                 {
@@ -263,7 +258,7 @@ namespace Hybrasyl
                 {
                     while (inboundBytes.Length > 3)
                     {
-                        Logger.InfoFormat("Inside while loop");
+                        Logger.Debug("Inside while loop");
                         var packetLength = ((int) inboundBytes[1] << 8) + (int) inboundBytes[2] + 3;
                         if (packetLength > inboundBytes.Length)
                         {
@@ -278,7 +273,7 @@ namespace Hybrasyl
                             // Also remove it from our local buffer...this seems kinda gross to me
                             inboundBytes =
                                 new List<byte>(inboundBytes).GetRange(packetLength,
-                                    inboundBytes.Length - packetLength)
+                                        inboundBytes.Length - packetLength)
                                     .ToArray();
 
                             if (receivedPacket.ShouldEncrypt)
@@ -291,36 +286,37 @@ namespace Hybrasyl
                             {
                                 if (this is Lobby)
                                 {
-                                    Logger.InfoFormat("Lobby: 0x{0:X2}", receivedPacket.Opcode);
+                                    Logger.DebugFormat("Lobby: 0x{0:X2}", receivedPacket.Opcode);
                                     var handler = (this as Lobby).PacketHandlers[receivedPacket.Opcode];
                                     handler.Invoke(client, receivedPacket);
-                                    Logger.InfoFormat("Lobby packet done");
+                                    Logger.Debug("Lobby packet done");
                                     client.UpdateLastReceived();
                                 }
                                 else if (this is Login)
                                 {
-                                    Logger.InfoFormat("Login: 0x{0:X2}", receivedPacket.Opcode);
+                                    Logger.DebugFormat("Login: 0x{0:X2}", receivedPacket.Opcode);
                                     var handler = (this as Login).PacketHandlers[receivedPacket.Opcode];
                                     handler.Invoke(client, receivedPacket);
-                                    Logger.InfoFormat("Login packet done");
+                                    Logger.DebugFormat("Login packet done");
                                     client.UpdateLastReceived();
                                 }
                                 else
                                 {
                                     client.UpdateLastReceived(receivedPacket.Opcode != 0x45 &&
                                                               receivedPacket.Opcode != 0x75);
-                                    Logger.InfoFormat("Queuing: 0x{0:X2}", receivedPacket.Opcode);
+                                    Logger.DebugFormat("Queuing: 0x{0:X2}", receivedPacket.Opcode);
                                     // Check for throttling
                                     ThrottleInfo throttleInfo = null;
                                     if (client.Throttle.ContainsKey(receivedPacket.Opcode))
                                     {
                                         throttleInfo = client.Throttle[receivedPacket.Opcode];
                                     }
-                                    
+
                                     if (throttleInfo == null || throttleInfo.IsThrottled == false)
                                     {
-                                        if(throttleInfo != null) client.Throttle[receivedPacket.Opcode].Received();
-                                        World.MessageQueue.Add(new HybrasylClientMessage(receivedPacket, client.ConnectionId));
+                                        if (throttleInfo != null) client.Throttle[receivedPacket.Opcode].Received();
+                                        World.MessageQueue.Add(new HybrasylClientMessage(receivedPacket,
+                                            client.ConnectionId));
                                     }
                                     else
                                     {
@@ -340,8 +336,7 @@ namespace Hybrasyl
             }
             else
             {
-                Logger.DebugFormat("cid {0}: client is disconnected or corrupt packets received",
-                    client.ConnectionId);
+                Logger.Error($"cid {client.ConnectionId}: client is disconnected or corrupt packets received");
                 client.Disconnect();
                 return;
             }
@@ -351,7 +346,7 @@ namespace Hybrasyl
             {
                 state.WorkSocket.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0,
                     new AsyncCallback(this.ReadCallback), state);
-                Logger.InfoFormat("Triggering receive callback");
+                Logger.Debug("Triggering receive callback");
             }
             catch (ObjectDisposedException)
             {
