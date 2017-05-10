@@ -115,10 +115,10 @@ namespace Hybrasyl
             LogManager.GetLogger(
                 System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        
-        public Dictionary<uint, WorldObject> Objects { get; set; }
+        public Dictionary<uint, WorldObject> Objects { get; set; }      
+
         public Dictionary<string, string> Portraits { get; set; }
-        // TODO: refactor to use WorldDataStore / dictionaries
+
         public Strings Strings { get; set; }
 
         public WorldDataStore WorldData { set; get;  }
@@ -430,23 +430,30 @@ namespace Hybrasyl
                     Logger.DebugFormat("Items: loaded {0}, id {1}", newItem.Name, newItem.Id);
                     WorldData.SetWithIndex(newItem.Id, newItem,  newItem.Name);
                     // Handle some null cases; there's probably a nicer way to do this
-                    if (newItem.Properties.StatEffects.Combat == null) { newItem.Properties.StatEffects.Combat = new StatEffectsCombat(); }
-                    if (newItem.Properties.StatEffects.Element == null) { newItem.Properties.StatEffects.Element = new StatEffectsElement(); }
-                    if (newItem.Properties.StatEffects.Base == null) { newItem.Properties.StatEffects.Base = new StatEffectsBase(); }
                     if (newItem.Properties.Variants != null)
                     {
                         foreach (var targetGroup in newItem.Properties.Variants.Group)
                         {
-                            foreach (var variant in WorldData.Get<VariantGroup>(targetGroup).Variant)
+                            VariantGroup group;
+                            if (WorldData.TryGetValue(targetGroup, out group))
                             {
-                                var variantItem = ResolveVariant(newItem, variant, targetGroup);
-                                Logger.DebugFormat("ItemObject {0}: variantgroup {1}, subvariant {2}", variantItem.Name, targetGroup, variant.Name);
-                                if (WorldData.ContainsKey<Item>(variantItem.Id))
+                                foreach (var variant in WorldData.Get<VariantGroup>(targetGroup).Variant)
                                 {
-                                    Logger.ErrorFormat("Item already exists with Key {0} : {1}. Cannot add {2}", variantItem.Id, WorldData.Get<Item>(variantItem.Id).Name, variantItem.Name);
+                                    var variantItem = ResolveVariant(newItem, variant, targetGroup);
+                                    Logger.DebugFormat("ItemObject {0}: variantgroup {1}, subvariant {2}",
+                                        variantItem.Name, targetGroup, variant.Name);
+                                    if (WorldData.ContainsKey<Item>(variantItem.Id))
+                                    {
+                                        Logger.ErrorFormat("Item already exists with Key {0} : {1}. Cannot add {2}",
+                                            variantItem.Id, WorldData.Get<Item>(variantItem.Id).Name, variantItem.Name);
+                                    }
+                                    WorldData.SetWithIndex(variantItem.Id, variantItem,
+                                        new Tuple<Sex, string>(Sex.Neutral, variantItem.Name));
                                 }
-                                WorldData.SetWithIndex(variantItem.Id, variantItem,
-                                     new Tuple<Sex, string>(Sex.Neutral, variantItem.Name));
+                            }
+                            else
+                            {
+                                Logger.Error($"Item {newItem.Name}: variant group {targetGroup} could not be resolved");
                             }
                         }
                     }
@@ -1015,9 +1022,8 @@ namespace Hybrasyl
             User user;
             if (ActiveUsers.TryRemove(connectionId, out user))
             {
-                Logger.InfoFormat("cid {0}: closed, player {1} removed", connectionId, user.Name);
-                if (user.ActiveExchange != null)
-                    user.ActiveExchange.CancelExchange(user);
+                Logger.Info($"cid {connectionId}: closed, player {user.Name} removed");
+                user.ActiveExchange?.CancelExchange(user);
                 ((IDictionary)ActiveUsersByName).Remove(user.Name);
                 user.Save();
                 user.UpdateLogoffTime();
@@ -1029,7 +1035,7 @@ namespace Hybrasyl
                 }
 
                 Remove(user);
-                Logger.DebugFormat("cid {0}: {1} cleaned up successfully", user.Name);
+                Logger.Debug($"cid {connectionId}: {user.Name} cleaned up successfully");
                 DeleteUser(user.Name);
             }
         }
@@ -1616,7 +1622,7 @@ namespace Hybrasyl
                             Regex searchTerm;
                             try
                             {
-                                Logger.InfoFormat("Search term was {0}", searchstring);
+                                Logger.Debug($"Search term was {searchstring}");
                                 searchTerm = new Regex(string.Format("{0}", searchstring));
                             }
                             catch
@@ -1861,7 +1867,8 @@ namespace Hybrasyl
 
                             var gcmContents = "Contents of Global Connection Manifest\n";
                             var userContents = "Contents of User Dictionary\n";
-                            var ActiveUserContents = "Contents of ActiveUsers Concurrent Dictionary\n";
+                            var activeUserContents = "Contents of ActiveUsers Concurrent Dictionary\n";
+
                             foreach (var pair in GlobalConnectionManifest.ConnectedClients)
                             {
                                 var serverType = string.Empty;
@@ -1896,13 +1903,13 @@ namespace Hybrasyl
                             }
                             foreach (var tehotheruser in ActiveUsersByName)
                             {
-                                ActiveUserContents = ActiveUserContents +
+                                activeUserContents = activeUserContents +
                                                      string.Format("{0}: {1}\n", tehotheruser.Value, tehotheruser.Key);
                             }
 
                             // Report to the end user
                             user.SendMessage(
-                                string.Format("{0}\n\n{1}\n\n{2}", gcmContents, userContents, ActiveUserContents),
+                                string.Format("{0}\n\n{1}\n\n{2}", gcmContents, userContents, activeUserContents),
                                 MessageTypes.SLATE_WITH_SCROLLBAR);
                         }
                         break;
@@ -1960,7 +1967,6 @@ namespace Hybrasyl
                         {
                             string skillName;
 
-                            Logger.DebugFormat("/skill: Last argument is {0}", args.Last());
                             Regex integer = new Regex(@"^\d+$");
 
                             skillName = string.Join(" ", args, 1, args.Length - 1);
@@ -1974,7 +1980,6 @@ namespace Hybrasyl
                         {
                             string spellName;
 
-                            Logger.DebugFormat("/skill: Last argument is {0}", args.Last());
                             Regex integer = new Regex(@"^\d+$");
 
                             spellName = string.Join(" ", args, 1, args.Length - 1);
@@ -1987,7 +1992,6 @@ namespace Hybrasyl
                     case "/spawn":
                         {
                             string creatureName;
-                            Logger.DebugFormat("/skill Last argument is {0}", args.Last());
 
                             creatureName = string.Join(" ", args, 1, args.Length - 1);
 
