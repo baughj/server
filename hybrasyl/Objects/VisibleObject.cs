@@ -41,6 +41,9 @@ namespace Hybrasyl.Objects
         public ushort Sprite { get; set; }
         public string Portrait { get; set; }
         public string DisplayText { get; set; }
+        public string Greeting => GreetingOverride != string.Empty ? GreetingOverride : World.Strings.Merchant.FirstOrDefault(x => x.Key == "greeting").Value;
+
+        public string GreetingOverride { get; set; }
 
         public string DeathPileOwner { get; set; }
         public List<string> DeathPileAllowedLooters { get; set; }
@@ -52,6 +55,7 @@ namespace Hybrasyl.Objects
             DeathPileAllowedLooters = new List<string>();
             DeathPileOwner = string.Empty;
             DeathPileTime = null;
+            GreetingOverride = string.Empty;
         }
 
         public virtual void AoiEntry(VisibleObject obj)
@@ -226,7 +230,6 @@ namespace Hybrasyl.Objects
 
         public void DisplayPursuits(User invoker)
         {
-            var greeting = World.Strings.Merchant.FirstOrDefault(x => x.Key == "greeting");
             var optionsCount = 0;
             var options = new MerchantOptions();
             options.Options = new List<MerchantDialogOption>();
@@ -285,6 +288,7 @@ namespace Hybrasyl.Objects
             foreach (var pursuit in Pursuits)
             {
                 Logger.DebugFormat("Pursuit {0}, id {1}", pursuit.Name, pursuit.Id);
+                // Fire our callback, if it exists
                 options.Options.Add(new MerchantDialogOption { Id = (ushort)pursuit.Id.Value, Text = pursuit.Name} );
                 optionsCount++;
 
@@ -302,7 +306,7 @@ namespace Hybrasyl.Objects
                 Color2 = 0,
                 PortraitType = 0,
                 Name = Name,
-                Text = greeting?.Value ?? string.Empty,
+                Text = Greeting,
                 Options = options
             };
 

@@ -922,7 +922,12 @@ namespace Hybrasyl.Objects
 
         public void TakeExperience(uint exp)
         {
-
+            if (exp >= Experience)
+                exp = 0;
+            else
+                Experience -= exp;
+            SendSystemMessage($"Your world spins as your insight leaves you ((-{exp} experience!))");
+            UpdateAttributes(StatUpdateFlags.Experience);
         }
 
         public bool AssociateConnection(World world, long connectionId)
@@ -1510,24 +1515,20 @@ namespace Hybrasyl.Objects
 
         public string GetFlag(string flag)
         {
-            string value;
-            if (UserFlags.TryGetValue(flag, out value))
-            {
-                return value;
-            }
-            return string.Empty;
+            string value = string.Empty;
+            UserFlags.TryGetValue(flag, out value);
+            return value;
         }
-
 
         public string GetSessionFlag(string flag)
         {
-            string value;
-            if (UserSessionFlags.TryGetValue(flag, out value))
-            {
-                return value;
-            }
-            return string.Empty;
+            string value = string.Empty;
+            UserSessionFlags.TryGetValue(flag, out value);
+            return value;
         }
+
+        public bool HasFlag(string flag) => UserFlags.ContainsKey(flag);
+        public bool HasSessionFlag(string flag) => UserSessionFlags.ContainsKey(flag);
 
         public override void UpdateAttributes(StatUpdateFlags flags)
         {

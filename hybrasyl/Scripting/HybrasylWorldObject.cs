@@ -45,7 +45,15 @@ namespace Hybrasyl.Scripting
                     merchant.DisplayPursuits(hybUser.User);
                 }
             }
+        }
 
+        public void SetGreetingText(string greeting)
+        {
+            if (Obj is VisibleObject)
+            {
+                var vo = Obj as VisibleObject;
+                vo.GreetingOverride = greeting;
+            }
         }
 
         public void Destroy()

@@ -37,9 +37,9 @@ namespace Hybrasyl.Scripting
             Options = new OrderedDictionary();
         }
 
-        public void AddSelection(string option, string jsexpr)
+        public void AddSelection(string option, string expression)
         {
-            Options.Add(option, jsexpr);
+            Options.Add(option, expression);
         }
     }
 

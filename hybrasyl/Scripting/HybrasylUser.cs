@@ -109,7 +109,7 @@ namespace Hybrasyl.Scripting
             return User.Legend;
         }
 
-        public bool AddLegendMark(LegendIcon icon, LegendColor color, string text, string prefix=default(string), bool isPublic = true, int quantity = 0)
+        public bool AddLegendMark(LegendIcon icon, LegendColor color, string text, string prefix = default(string), bool isPublic = true, int quantity = 0)
         {
             return AddLegendMark(icon, color, text, DateTime.Now, prefix, isPublic, quantity);
         }
@@ -244,19 +244,47 @@ namespace Hybrasyl.Scripting
             return false;
         }
 
-        public bool GiveExperience(int exp)
+        public void GiveExperience(int exp)
         {
-            SystemMessage($"{exp} experience!");
+            User.SendSystemMessage($"{exp} experience!");
             User.GiveExperience((uint)exp);
-            return true;
         }
 
-        public bool TakeExperience(int exp)
+        public bool GiveExperience(int exp, string flagName, bool sessionFlag = false, string flagValue = "")
         {
-            User.Experience -= (uint)exp;
-            SystemMessage($"Your world spins as your insight leaves you ((-{exp} experience!))");
-            User.UpdateAttributes(StatUpdateFlags.Experience);
-            return true;
+            var awardExp = true;
+            if (flagValue != string.Empty)
+            {
+                awardExp = (!sessionFlag && (User.GetFlag(flagName) == flagValue)) || (sessionFlag && (User.GetSessionFlag(flagName) == flagValue));
+            }
+            else
+            {
+                awardExp = (!sessionFlag && User.HasFlag(flagName)) || (sessionFlag && User.HasSessionFlag(flagName));
+            }
+
+            if (awardExp) GiveExperience(exp);
+            return awardExp;
+        }
+
+        public void TakeExperience(int exp)
+        {
+            User.TakeExperience((uint)exp);
+        }
+
+        public bool TakeExperience(int exp, string flagName, bool sessionFlag = false, string flagValue = "")
+        {
+            var takeExp = true;
+            if (flagValue != string.Empty)
+            {
+                takeExp = (!sessionFlag && (User.GetFlag(flagName) == flagValue)) || (sessionFlag && (User.GetSessionFlag(flagName) == flagValue));
+            }
+            else
+            {
+                takeExp = (!sessionFlag && User.HasFlag(flagName)) || (sessionFlag && User.HasSessionFlag(flagName));
+            }
+
+            if (takeExp) TakeExperience(exp);
+            return takeExp;
         }
 
         public void SystemMessage(string message)
