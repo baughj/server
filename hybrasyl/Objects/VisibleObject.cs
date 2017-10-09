@@ -288,8 +288,8 @@ namespace Hybrasyl.Objects
             foreach (var pursuit in Pursuits)
             {
                 Logger.DebugFormat("Pursuit {0}, id {1}", pursuit.Name, pursuit.Id);
-                // Fire our callback, if it exists
-                options.Options.Add(new MerchantDialogOption { Id = (ushort)pursuit.Id.Value, Text = pursuit.Name} );
+                if (pursuit.IsOnMainMenu(invoker))
+                    options.Options.Add(new MerchantDialogOption { Id = (ushort)pursuit.Id.Value, Text = pursuit.Name} );
                 optionsCount++;
 
             }

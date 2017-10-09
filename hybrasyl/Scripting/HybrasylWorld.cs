@@ -79,22 +79,24 @@ namespace Hybrasyl.Scripting
             return dialogSequence;
         }
 
-        public HybrasylDialog NewDialog(string displayText, string callback = null)
+        public HybrasylDialog NewDialog(string displayText, string preDisplayCallback = "", string postDisplayCallback = "")
         {
             var dialog = new SimpleDialog(displayText);
-            dialog.SetCallbackHandler(callback);
+            dialog.AddPreDisplayCallback(preDisplayCallback);
+            dialog.AddPostDisplayCallback(preDisplayCallback);
             return new HybrasylDialog(dialog);
         }
 
-        public HybrasylDialog NewTextDialog(string displayText, string topCaption, string bottomCaption, int inputLength = 254, string handler="", string callback="")
+        public HybrasylDialog NewTextDialog(string displayText, string topCaption, string bottomCaption, int inputLength = 254, string handler = "", string preDisplayCallback = "", string postDisplayCallback = "")
         {
             var dialog = new TextDialog(displayText, topCaption, bottomCaption, inputLength);
             dialog.SetInputHandler(handler);
-            dialog.SetCallbackHandler(callback);
+            dialog.AddPreDisplayCallback(preDisplayCallback);
+            dialog.AddPostDisplayCallback(preDisplayCallback);
             return new HybrasylDialog(dialog);
         }
 
-        public HybrasylDialog NewOptionsDialog(string displayText, HybrasylDialogOptions dialogOptions, string handler="", string callback="")
+        public HybrasylDialog NewOptionsDialog(string displayText, HybrasylDialogOptions dialogOptions, string handler="", string preDisplayCallback = "", string postDisplayCallback = "")
         {
             var dialog = new OptionsDialog(displayText);
             foreach (DictionaryEntry entry in dialogOptions.Options)
@@ -102,7 +104,8 @@ namespace Hybrasyl.Scripting
                 dialog.AddDialogOption(entry.Key as string, entry.Value as string);
             }
             dialog.SetInputHandler(handler);
-            dialog.SetCallbackHandler(callback);
+            dialog.AddPreDisplayCallback(preDisplayCallback);
+            dialog.AddPostDisplayCallback(preDisplayCallback);
             return new HybrasylDialog(dialog);
         }
     }

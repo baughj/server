@@ -98,8 +98,8 @@ namespace Hybrasyl.Scripting
             return new HybrasylWorldObject(obj);
         }
 
-        /// <summary>
-        /// Prepare a script's Lua state for executing Hybrasyl scripting code, adding needed host object and type references.
+        public dynamic GetAssociate(WorldObject associate) => associate == null ? Associate : GetObjectWrapper(associate);
+
         /// </summary>
         public void PrepareState()
         {
@@ -146,13 +146,32 @@ namespace Hybrasyl.Scripting
         }
 
         /// <summary>
-        /// Execute a JavaScript expression in the context of an associated world object.
+        /// Evaluate a given Lua expression and return a boolean.
+        /// </summary>
+        /// <param name="expr">The lua expression.</param>
+        /// <param name="invoker">The invoker responsible for the evaluation.</param>
+        /// <returns>True or False, if expression could be evaluated as a boolean; otherwise, returns False and logs a warning in the scripting log.</returns>
+        public bool EvaluateAsBool(string expr, dynamic invoker, dynamic associate = null)
+        {
+            if (Disabled)
+                return false;
+
+            State["invoker"] = GetObjectWrapper(invoker);
+            State["associate"] = GetAssociate(associate);
+            var retval = State.DoString(expr)[0] as bool?;
+            if (retval == null)
+                ScriptingLogger.Warn($"{Name}: expression {expr} failed to return boolean, defaulting to false");
+            return retval ?? false;
+        }
+
+        /// <summary>
+        /// Execute a Lua expression in the context of an associated world object.
         /// Primarily used for dialog callbacks.
         /// </summary>
-        /// <param name="expr">The javascript expression, in string form.</param>
+        /// <param name="expr">The Lua expression, in string form.</param>
         /// <param name="invoker">The invoker (caller).</param>
         /// <returns></returns>
-        public bool Execute(string expr, dynamic invoker)
+        public bool Execute(string expr, dynamic invoker, dynamic associate = null)
         {
             if (Disabled)
                 return false;
@@ -160,6 +179,7 @@ namespace Hybrasyl.Scripting
             try
             {
                 State["invoker"] = GetObjectWrapper(invoker);
+                State["associate"] = GetAssociate(associate);
                 State.DoString(expr);
             }
             catch (NLua.Exceptions.LuaScriptException e)
@@ -173,7 +193,7 @@ namespace Hybrasyl.Scripting
 
         }
 
-        public bool ExecuteFunction(string functionName, dynamic associate, dynamic invoker)
+        public bool ExecuteFunction(string functionName, dynamic invoker, dynamic associate = null)
         {
             if (Disabled)
                 return false;
@@ -183,7 +203,7 @@ namespace Hybrasyl.Scripting
                 var luaFunction = State[functionName] as LuaFunction;
                 if (luaFunction != null)
                 {
-                    State["associate"] = GetObjectWrapper(associate);
+                    State["associate"] = GetAssociate(associate);
                     State["invoker"] = GetObjectWrapper(invoker);
                     luaFunction.Call();
                 }
@@ -199,34 +219,6 @@ namespace Hybrasyl.Scripting
             }
 
             return true;
-        }
-
-        public bool ExecuteFunction(string functionName, dynamic invoker)
-        {
-            if (Disabled)
-                return false;
-
-            try
-            {
-                var luaFunction = State[functionName] as LuaFunction;
-                if (luaFunction != null)
-                {
-                    State["invoker"] = GetObjectWrapper(invoker);
-                    luaFunction.Call();
-                }
-                else
-                    return false;
-            }
-            catch (NLua.Exceptions.LuaScriptException e)
-            {
-                ScriptingLogger.Error($"{Name}: Error executing function: {functionName} ({e.ToString()}) , full stacktrace follows:\n{e.StackTrace}");
-                Disabled = true;
-                CompilationError = e.ToString();
-                return false;
-            }
-
-            return true;
-
         }
 
         public bool ExecuteFunction(string functionName)

@@ -38,9 +38,11 @@ namespace Hybrasyl
             public List<Dialog> Dialogs { get; private set; }
             public string Name { get; private set; }
             public uint? Id { get; set; }
-            public Script Script { get; private set; }
-            public WorldObject Associate { get; private set; }
+            //public Script Script { get; private set; }
             public string PreDisplayCallback { get; private set; }
+            public string PostDisplayCallback { get; private set; }
+            public string MainMenuCheck { get; private set; }
+
             public bool CloseOnEnd { get; set; }
 
             public DialogSequence(string sequenceName, bool closeOnEnd = false)
@@ -49,49 +51,33 @@ namespace Hybrasyl
                 Dialogs = new List<Dialog>();
                 Id = null;
                 CloseOnEnd = closeOnEnd;
-
             }
 
             /// <summary>
-            /// 
+            /// Show a dialog sequence to a player.
             /// </summary>
-            /// <param name="invoker"></param>
-            /// <param name="target"></param>
-            /// <param name="runCheck"></param>
-            public void ShowTo(User invoker, VisibleObject target = null, bool runCheck = true)
+            /// <param name="invoker">The invoker of the dialog sequence.</param>
+            /// <param name="associateOverride">The responsible party for displaying the sequence (e.g. the NPC/item/whatever displaying the sequence).</param>
+            public void ShowTo(User invoker)
             {
-                // Either we must have an associate already known to us, one must be passed, or we must have a script defined
-                if (Associate == null && target == null && Script == null)
+                if (invoker.DialogState.Associate == null)
                 {
                     Logger.ErrorFormat("DialogSequence {0} has no known associate or script...?", Name);
                     // Need better error handling here
                     return;
                 }
-                if (PreDisplayCallback != null && runCheck)
-                {/*
-                    var invocation = new ScriptInvocation();
-                    invocation.Function = PreDisplayCallback;
-                    invocation.Invoker = invoker;
-                    invocation.Associate = target == null ? Associate : target;
-                    if (Script != null)
-                        invocation.Script = Script;
 
-                    if (invocation.Execute())
-                        Dialogs.First().ShowTo(invoker, target);*/
-                }
-                else
-                {
-                    Dialogs.First().ShowTo(invoker, target);
-                }
+                if (PreDisplayCallback != string.Empty)
+                    invoker.DialogState.Associate.Script.Execute(PreDisplayCallback, invoker);
+
+                Dialogs.First().ShowTo(invoker);
+
+                if (PostDisplayCallback != string.Empty)
+                    invoker.DialogState.Associate.Script.Execute(PostDisplayCallback, invoker);
             }
-            /// <summary>
-            /// Associate a dialog with an object in the world.
-            /// </summary>
-            /// <param name="obj"></param>
-            public void AssociateSequence(WorldObject obj)
-            {
-                Associate = obj;
-            }
+
+            public bool IsOnMainMenu(User invoker) => 
+                MainMenuCheck == string.Empty ? true : invoker.DialogState.Associate.Script.EvaluateAsBool(MainMenuCheck, invoker);
 
             public void AddDialog(Dialog dialog)
             {
@@ -100,10 +86,9 @@ namespace Hybrasyl
                 Dialogs.Add(dialog);
             }
 
-            public void AddPreDisplayCallback(string check)
-            {
-                PreDisplayCallback = check;
-            }
+            public void AddPreDisplayCallback(string preCallback) => PreDisplayCallback = preCallback;            
+            public void AddPostDisplayCallback(string postCallback) => PostDisplayCallback = postCallback;
+            public void AddMainMenuCheck(string menuCheck) => MainMenuCheck = menuCheck;
         }
 
         public class DialogOption
@@ -130,41 +115,57 @@ namespace Hybrasyl
             public DialogSequence Sequence { get; private set; }
             public int Index;
             public string DisplayText { get; protected set; }
-            public string CallbackExpression { get; protected set; }
             public ushort DisplaySprite { get; set; }
 
-            public Dialog(int dialogType, string displayText = null, string callbackFunction="")
-            {
-                DialogType = (ushort)dialogType;
-                DisplayText = displayText;
-                CallbackExpression = callbackFunction;
-                DisplaySprite = 0;
-            }
+            public string PreDisplayCallback { get; private set; }
+            public string PostDisplayCallback { get; private set; }
+            public string DisplayCheck { get; private set; }
 
-            // Any Dialog can have a callback function which can be used to process dialog responses, or
-            // take some action after a dialog fires.
-            // response. Normally this is set to a resolvable function inside a Hybrasyl script.
-            public void SetCallbackHandler(string callback)
-            {
-                CallbackExpression = callback;
-            }
+            public void AddPreDisplayCallback(string preCallback) => PreDisplayCallback = preCallback;
+            public void AddPostDisplayCallback(string postCallback) => PostDisplayCallback = postCallback;
+            public void AddDisplayCheck(string menuCheck) => DisplayCheck = menuCheck;
 
-            public void RunCallback(User target, VisibleObject associateOverride = null)
+            public bool IsDisplayable(User invoker)
             {
-                if (CallbackExpression != null)
+                if (DisplayCheck != string.Empty)
                 {
-                    VisibleObject associate = associateOverride == null ? Sequence.Associate as VisibleObject : associateOverride;
-                    associate.Script.Execute(CallbackExpression, target);
+                    return invoker.DialogState.ActiveScript.EvaluateAsBool(DisplayCheck, invoker);
+                }
+                return true;
+            }
+            public void RunPreDisplayCallback(User invoker)
+            {
+                if (PreDisplayCallback != string.Empty)
+                {
+                    invoker.DialogState.ActiveScript.Execute(PreDisplayCallback, invoker);
                 }
             }
 
+            public void RunPostDisplayCallback(User invoker)
+            {
+                if (PostDisplayCallback != string.Empty)
+                {
+                    invoker.DialogState.ActiveScript.Execute(PostDisplayCallback, invoker);
+                }
+            }
+
+            public Dialog(int dialogType, string displayText = null, string preDisplayCallback = "", string postDisplayCallback = "", string displayCheck = "")
+            {
+                DialogType = (ushort) dialogType;
+                DisplayText = displayText;
+                PreDisplayCallback = preDisplayCallback;
+                PostDisplayCallback = postDisplayCallback;
+                DisplayCheck = displayCheck;
+                DisplaySprite = 0;
+                Sequence = null;
+            }
+            
             public bool HasPrevDialog()
             {
                 Logger.DebugFormat("index {0}, count {1}", Index, Sequence.Dialogs.Count());
                 // Don't allow prev buttons after either input or options dialogs
                 if (Index != 0)
                 {
-
                     return Sequence.Dialogs.Count() > 1 && Sequence.Dialogs[Index - 1].DialogType == DialogTypes.SIMPLE_DIALOG;
                 }
                 return false;
@@ -179,7 +180,7 @@ namespace Hybrasyl
                 return (DialogType == DialogTypes.SIMPLE_DIALOG) && (Index <= Sequence.Dialogs.Count());
             }
 
-            public ServerPacket GenerateBasePacket(User invoker, VisibleObject invokee)
+            public ServerPacket GenerateBasePacket(User invoker)
             {
                 byte color = 0;
                 ushort sprite = 0;
@@ -188,20 +189,20 @@ namespace Hybrasyl
                 var dialogPacket = new ServerPacket(0x30);
                 dialogPacket.WriteByte((byte)(DialogType));
 
-                if (invokee is Creature)
+                if (invoker.DialogState.Associate is Creature)
                 {
-                    var creature = (Creature) invokee;
+                    var creature = (Creature) invoker.DialogState.Associate;
                     sprite = (ushort) (0x4000 + creature.Sprite);
                     objType = 1;
                 }
-                else if (invokee is ItemObject)
+                else if (invoker.DialogState.Associate is ItemObject)
                 {
-                    var item = (ItemObject) invokee;
+                    var item = (ItemObject) invoker.DialogState.Associate;
                     objType = 2;
                     sprite = (ushort)(0x8000 + item.Sprite);
                     color = item.Color;
                 }
-                else if (invokee is Reactor)
+                else if (invoker.DialogState.Associate is Reactor)
                 {
                     objType = 4;
                 }
@@ -210,7 +211,7 @@ namespace Hybrasyl
                     sprite = DisplaySprite;
 
                 dialogPacket.WriteByte(objType);
-                dialogPacket.WriteUInt32(invokee.Id);
+                dialogPacket.WriteUInt32(invoker.DialogState.Associate.Id);
                 dialogPacket.WriteByte(0); // Unknown value
                 Logger.DebugFormat("Sprite is {0}", sprite);
                 dialogPacket.WriteUInt16(sprite);
@@ -226,7 +227,7 @@ namespace Hybrasyl
                 dialogPacket.WriteBoolean(HasNextDialog());
 
                 dialogPacket.WriteByte(0);
-                dialogPacket.WriteString8(invokee.Name);
+                dialogPacket.WriteString8(invoker.DialogState.Associate.Name);
                 if (DisplayText != null)
                 {
                     dialogPacket.WriteString16(DisplayText);
@@ -239,10 +240,9 @@ namespace Hybrasyl
                 Sequence = dialogSequence;
             }
 
-            public virtual void ShowTo(User invoker, VisibleObject invokee)
+            public virtual void ShowTo(User invoker)
             {
             }
-
         }
 
         /// <summary>
@@ -259,7 +259,7 @@ namespace Hybrasyl
                 Function = function;
             }
 
-            public override void ShowTo(User invoker, VisibleObject invokee)
+            public override void ShowTo(User invoker)
             {
                 return;
             }
@@ -271,11 +271,12 @@ namespace Hybrasyl
                 : base(DialogTypes.SIMPLE_DIALOG, displayText)
             { }
 
-            public override void ShowTo(User invoker, VisibleObject invokee)
+            public override void ShowTo(User invoker)
             {
-                var dialogPacket = base.GenerateBasePacket(invoker, invokee);
+                RunPreDisplayCallback(invoker);
+                var dialogPacket = base.GenerateBasePacket(invoker);
                 invoker.Enqueue(dialogPacket);
-                RunCallback(invoker, invokee);
+                RunPostDisplayCallback(invoker);
             }
 
         }
@@ -306,9 +307,10 @@ namespace Hybrasyl
                 Options = new List<DialogOption>();
             }
 
-            public override void ShowTo(User invoker, VisibleObject invokee)
-            {
-                var dialogPacket = base.GenerateBasePacket(invoker, invokee);
+            public override void ShowTo(User invoker)
+            {                
+                RunPreDisplayCallback(invoker);
+                var dialogPacket = base.GenerateBasePacket(invoker);
                 if (Options.Count > 0)
                 {
                     dialogPacket.WriteByte((byte)Options.Count);
@@ -317,7 +319,7 @@ namespace Hybrasyl
                         dialogPacket.WriteString8(option.OptionText);
                     }
                     invoker.Enqueue(dialogPacket);
-                    RunCallback(invoker, invokee);
+                    RunPostDisplayCallback(invoker);
                 }
             }
 
@@ -326,16 +328,9 @@ namespace Hybrasyl
                 Options.Add(new DialogOption(option, callback));
             }
 
-            public void HandleResponse(WorldObject invoker, int optionSelected, WorldObject associateOverride = null)
+            public void HandleResponse(User invoker, int optionSelected)
             {
-                WorldObject Associate;
                 string Expression = string.Empty;
-
-                if (Sequence.Associate != null)
-                    Associate = Sequence.Associate;
-                else
-                    Associate = associateOverride;
-
                 
                 // If the individual options don't have callbacks, use the dialog callback instead.
                 if (Handler != null && Options[optionSelected - 1].CallbackFunction == null)
@@ -347,7 +342,7 @@ namespace Hybrasyl
                     Expression = Options[optionSelected - 1].CallbackFunction;
                 }
                 
-                Associate.Script.Execute(Expression, invoker);
+                invoker.DialogState.Associate.Script.Execute(Expression, invoker);
                 
             }
         }
@@ -366,38 +361,29 @@ namespace Hybrasyl
                 InputLength = inputLength;
             }
 
-            public override void ShowTo(User invoker, VisibleObject invokee)
+            public override void ShowTo(User invoker)
             {
+                RunPreDisplayCallback(invoker);
                 Logger.DebugFormat("active for input dialog: {0}, {1}, {2}", TopCaption, InputLength, BottomCaption);
-                var dialogPacket = base.GenerateBasePacket(invoker, invokee);
+                var dialogPacket = base.GenerateBasePacket(invoker);
                 dialogPacket.WriteString8(TopCaption);
                 dialogPacket.WriteByte((byte)InputLength);
                 dialogPacket.WriteString8(BottomCaption);
                 invoker.Enqueue(dialogPacket);
-                RunCallback(invoker, invokee);
+                RunPostDisplayCallback(invoker);
             }
 
-            public void HandleResponse(WorldObject invoker, string response, WorldObject associateOverride = null)
+            public void HandleResponse(User invoker, string response)
             {
                 Logger.DebugFormat("Response {0} from player {1}", response, invoker.Name);
 
                 if (Handler != string.Empty)
                 {
-                    // Either we must have an associate already known to us, one must be passed, or we must have a script defined
-                    if (Sequence.Associate == null && associateOverride == null && Sequence.Script == null)
-                    {
-                        Logger.ErrorFormat("InputDialog has no known associate or script...?");
-                        // Need better error handling here
-                        return;
-                    }
-
-                    var Associate = associateOverride == null ? Sequence.Associate : associateOverride;
                     // Expand this in the future, for right now we simply replace %RESPONSE% with whatever the user put into the text box
                     var Expression = System.String.Copy(Handler);
                     Expression = Expression.Replace("%RESPONSE%", response);
 
-                    Associate.Script.Execute(Expression, invoker);
-
+                    invoker.DialogState.ActiveScript.Execute(Expression, invoker);
                 }
             }
         }
@@ -411,6 +397,10 @@ namespace Hybrasyl
             internal Dialog ActiveDialog { get; private set; }
             internal DialogSequence ActiveDialogSequence { get; private set; }
             internal User User { get; private set; }
+
+            public Script ActiveScript {
+                get { return Associate?.Script ?? null; }
+            }
 
             public uint CurrentPursuitId
             {
@@ -455,27 +445,15 @@ namespace Hybrasyl
                 }
             }
 
-            public DialogState(User user)
+            public DialogState(User user, WorldObject associate)
             {
-                Associate = null;
+                User = user;
+                Associate = associate;
                 ActiveDialog = null;
                 ActiveDialogSequence = null;
-                User = user;
             }
-
-            public void RunCallback(User target, VisibleObject associate)
-            {
-                ActiveDialog.RunCallback(target, associate);
-            }
-
-            /// <summary>
-            /// Start a dialog sequence. The player must not already be in a dialog or in
-            /// any other state.
-            /// </summary>
-            /// <param name="target"></param>
-            /// <param name="dialogStart"></param>
-            /// <returns></returns>
-            public bool StartDialog(VisibleObject target, DialogSequence dialogStart)
+               
+            public bool StartDialogSequence(DialogSequence dialogStart)
             {
                 if (dialogStart.Id == null)
                 {
@@ -484,21 +462,11 @@ namespace Hybrasyl
                 }
                 if (!InDialog)
                 {
-                    Associate = target;
                     ActiveDialogSequence = dialogStart;
                     ActiveDialog = dialogStart.Dialogs.First();
                     return true;
                 }
                 return false;
-            }
-
-            /// <summary>
-            /// Update the WorldObject associated with this dialog state to obj.
-            /// </summary>
-            /// <param name="obj">The world object which will now be associated with the dialog state.</param>
-            internal void UpdateAssociate(WorldObject obj)
-            {
-                Associate = obj;
             }
 
             /// <summary>
@@ -544,17 +512,6 @@ namespace Hybrasyl
             }
 
             /// <summary>
-            /// Clear the dialog state, e.g. a user is done with a sequence or has cancelled and
-            /// returned to game.
-            /// </summary>
-            public void EndDialog()
-            {
-                Associate = null;
-                ActiveDialog = null;
-                ActiveDialogSequence = null;
-            }
-
-            /// <summary>
             /// Set the current dialog. This dialog should be either the previous or next dialog
             /// from the last one, and the player must be in a dialog.
             /// </summary>
@@ -571,7 +528,7 @@ namespace Hybrasyl
                     return true;
                 }
             }
-
+            public void ShowCurrentDialog() => ActiveDialog.ShowTo(User);
         }
     }
 }

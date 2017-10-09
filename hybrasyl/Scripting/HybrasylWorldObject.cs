@@ -28,6 +28,7 @@ namespace Hybrasyl.Scripting
     public class HybrasylWorldObject
     {
         internal WorldObject Obj { get; set; }
+        public string Name => Obj?.Name ?? string.Empty;
 
         public HybrasylWorldObject(WorldObject obj)
         {

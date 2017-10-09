@@ -3622,8 +3622,9 @@ namespace Hybrasyl
                 }
                 Logger.DebugFormat("{0}: showing initial dialog for Pursuit {1} ({2})",
                     clickTarget.Name, pursuit.Id, pursuit.Name);
-                user.DialogState.StartDialog(clickTarget, pursuit);
-                pursuit.ShowTo(user, clickTarget);
+                user.DialogState = new DialogState(user, clickTarget);
+                user.DialogState.StartDialogSequence(pursuit);
+                user.DialogState.ShowCurrentDialog();
             }
             else
             {
@@ -3656,7 +3657,7 @@ namespace Hybrasyl
             {
                 // If we get a packet back with the same index and ID, the dialog has been closed.
                 Logger.DebugFormat("Dialog closed, resetting dialog state");
-                user.DialogState.EndDialog();
+                user.EndDialog();
                 return;
             }
 
@@ -3680,7 +3681,7 @@ namespace Hybrasyl
 
                     if (user.DialogState.SetDialogIndex(clickTarget, pursuitID, pursuitIndex))
                     {
-                        user.DialogState.ActiveDialog.ShowTo(user, clickTarget);
+                        user.DialogState.ShowCurrentDialog();
                         return;
                     }
                 }
@@ -3691,7 +3692,7 @@ namespace Hybrasyl
 
                 if (user.DialogState.ActiveDialogSequence.Dialogs.Count() == pursuitIndex)
                 {
-                    user.DialogState.EndDialog();
+                    user.EndDialog();
                     if (user.DialogState.ActiveDialogSequence.CloseOnEnd)
                     {
                         Logger.DebugFormat("Sending close packet");
@@ -3701,7 +3702,9 @@ namespace Hybrasyl
                         user.Enqueue(p);
                     }
                     else
+                    {
                         clickTarget.DisplayPursuits(user);
+                    }
                 }
 
                 // Is the active dialog an input or options dialog?
@@ -3711,7 +3714,7 @@ namespace Hybrasyl
                     var paramsLength = packet.ReadByte();
                     var option = packet.ReadByte();
                     var dialog = user.DialogState.ActiveDialog as OptionsDialog;
-                    dialog.HandleResponse(user, option, clickTarget);
+                    dialog.HandleResponse(user, option);
                 }
 
                 if (user.DialogState.ActiveDialog is TextDialog)
@@ -3719,7 +3722,7 @@ namespace Hybrasyl
                     var paramsLength = packet.ReadByte();
                     var response = packet.ReadString8();
                     var dialog = user.DialogState.ActiveDialog as TextDialog;
-                    dialog.HandleResponse(user, response, clickTarget);
+                    dialog.HandleResponse(user, response);
                 }
 
                 // Did the handling of a response result in our active dialog sequence changing? If so, exit.
@@ -3733,7 +3736,7 @@ namespace Hybrasyl
                 if (user.DialogState.SetDialogIndex(clickTarget, pursuitID, pursuitIndex))
                 {
                     Logger.DebugFormat("Pursuit index is now {0}", pursuitIndex);
-                    user.DialogState.ActiveDialog.ShowTo(user, clickTarget);
+                    user.DialogState.ShowCurrentDialog();
                     return;
                 }
                 else
@@ -3743,7 +3746,7 @@ namespace Hybrasyl
                     p.WriteByte(0x0A);
                     p.WriteByte(0x00);
                     user.Enqueue(p);
-                    user.DialogState.EndDialog();
+                    user.EndDialog();
                 }
             }
         }

@@ -305,45 +305,28 @@ namespace Hybrasyl.Scripting
 
         public void StartDialogSequence(string sequenceName, HybrasylWorldObject associate)
         {
-            DialogSequence newSequence;
-            if (User.World.GlobalSequencesCatalog.TryGetValue(sequenceName, out newSequence))
-            {
-                newSequence.ShowTo(User, (VisibleObject)associate.Obj);
-                // End previous sequence
-                User.DialogState.EndDialog();
-                User.DialogState.StartDialog(associate.Obj as VisibleObject, newSequence);
-            }
-
-        }
-
-        public void StartSequence(string sequenceName, HybrasylWorldObject associateOverride = null)
-        {
-            DialogSequence sequence;
-            VisibleObject associate;
             Logger.DebugFormat("{0} starting sequence {1}", User.Name, sequenceName);
 
-            // If we're using a new associate, we will consult that to find our sequence
-            associate = associateOverride == null ? User.DialogState.Associate as VisibleObject : associateOverride.Obj as VisibleObject;
 
             // Use the local catalog for sequences first, then consult the global catalog
+            DialogSequence sequence;
 
-            if (!associate.SequenceCatalog.TryGetValue(sequenceName, out sequence))
+            if (!associate.Obj.SequenceCatalog.TryGetValue(sequenceName, out sequence))
             {
                 if (!User.World.GlobalSequencesCatalog.TryGetValue(sequenceName, out sequence))
                 {
                     Logger.ErrorFormat("called from {0}: sequence name {1} cannot be found!",
                         associate.Name, sequenceName);
                     // To be safe, end all dialogs and basically abort
-                    User.DialogState.EndDialog();
+                    User.DialogState = null;
                     return;
                 }
             }
 
-            // sequence should now be our target sequence, let's end the current state and start a new one
-
-            User.DialogState.EndDialog();
-            User.DialogState.StartDialog(associate, sequence);
-            User.DialogState.ActiveDialog.ShowTo(User, associate);
+            // End previous sequence, if it exists
+            User.DialogState = new DialogState(User, associate.Obj);
+            User.DialogState.StartDialogSequence(sequence);
+            User.DialogState.ShowCurrentDialog();
         }
 
     }

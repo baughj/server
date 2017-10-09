@@ -96,11 +96,6 @@ namespace Hybrasyl.Objects
             }
 
             SequenceCatalog.Add(pursuit.Name, pursuit);
-
-            if (pursuit.Id > Constants.DIALOG_SEQUENCE_SHARED)
-            {
-                pursuit.AssociateSequence(this);
-            }
         }
 
         public virtual void RegisterDialogSequence(DialogSequence sequence)

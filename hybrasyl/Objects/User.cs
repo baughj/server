@@ -209,6 +209,8 @@ namespace Hybrasyl.Objects
 
         public DialogState DialogState { get; set; }
 
+        public void EndDialog() => DialogState = null;
+        
         [JsonProperty]
         private Dictionary<string, string> UserFlags { get; set; }
         private Dictionary<string, string> UserSessionFlags { get; set; }
@@ -723,7 +725,7 @@ namespace Hybrasyl.Objects
             NumSaidRepeated = 0;
             PortraitData = new byte[0];
             ProfileText = string.Empty;
-            DialogState = new DialogState(this);
+            DialogState = null;
             UserFlags = new Dictionary<string, string>();
             UserSessionFlags = new Dictionary<string, string>();
             Status = PlayerCondition.Alive;
@@ -929,7 +931,7 @@ namespace Hybrasyl.Objects
             SendSystemMessage($"Your world spins as your insight leaves you ((-{exp} experience!))");
             UpdateAttributes(StatUpdateFlags.Experience);
         }
-
+        
         public bool AssociateConnection(World world, long connectionId)
         {
             World = world;
