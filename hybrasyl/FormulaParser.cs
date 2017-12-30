@@ -11,7 +11,7 @@ namespace Hybrasyl
         private Creature _caster;
         private Castable _castable;
         private Creature _target;
-        public FormulaParser(Creature caster, Castable castable, Creature target = null)
+        public FormulaParser(Creature caster, Castable castable=null, Creature target = null)
         {
             _caster = caster;
             _castable = castable;
@@ -290,6 +290,7 @@ namespace Hybrasyl
                             break;
                         case "$CASTABLELEVEL":
                             {
+                                if (_castable != null) { }
                                 //this is temporary until castable.currentlevel is implemented.
                                 tokens[i] = "1"; 
                                 //if (_castable.Effects.CastableLevel == 0) tokens[i] = "1";

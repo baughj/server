@@ -37,8 +37,11 @@ namespace Hybrasyl
         private const int BufferSize = 1024;
         private byte[] _buffer = new byte[BufferSize];
         public bool Recieving;
-        private ConcurrentQueue<ServerPacket> _sendBuffer = new ConcurrentQueue<ServerPacket>(); 
+        private ConcurrentQueue<ServerPacket> _sendBuffer = new ConcurrentQueue<ServerPacket>();
+        public ManualResetEvent SendComplete = new ManualResetEvent(false);
+
         public bool Connected { get; set; }
+
 
         public long Id { get; }
 
@@ -121,8 +124,6 @@ namespace Hybrasyl
 
         public bool Connected => ClientState.Connected;
 
-        public bool IsReceiving { get; set; }
-
         public ClientState ClientState;
 
         public Socket Socket => ClientState.WorkSocket;
@@ -159,6 +160,8 @@ namespace Hybrasyl
         public string NewCharacterName { get; set; }
         public string NewCharacterSalt { get; set; }
         public string NewCharacterPassword { get; set; }
+
+        public object SendLock { get; set; }
 
         private int _heartbeatA = 0;
         private int _heartbeatB = 0;
@@ -364,6 +367,8 @@ namespace Hybrasyl
             EncryptionKeyTable = new byte[1024];
             _lastReceived = DateTime.Now.Ticks;
             GlobalConnectionManifest.RegisterClient(this);
+            SendLock = new object();
+
             ConnectedSince = DateTime.Now.Ticks;
         }
 
@@ -372,7 +377,6 @@ namespace Hybrasyl
             GlobalConnectionManifest.DeregisterClient(this);
             World.MessageQueue.Add(new HybrasylControlMessage(ControlOpcodes.CleanupUser, ConnectionId));
             ClientState.Dispose();
-
         }
 
         public byte[] GenerateKey(ushort bRand, byte sRand)
@@ -399,10 +403,85 @@ namespace Hybrasyl
             EncryptionKeyTable = Encoding.ASCII.GetBytes(table);
         }
 
+        public void FlushBuffers()
+        {
+            lock (SendLock)
+            {
+                try
+                {
+                    ServerPacket packet;
+                    while (ClientState.SendBufferTake(out packet))
+                    {
+                        if (packet == null) return;
+
+                        if (packet.ShouldEncrypt)
+                        {
+                            ++ServerOrdinal;
+                            packet.Ordinal = ServerOrdinal;
+
+                            packet.GenerateFooter();
+                            packet.Encrypt(this);
+                        }
+                        if (packet.TransmitDelay != 0)
+                        {
+                            Thread.Sleep(packet.TransmitDelay);
+                        }
+
+                        var buffer = packet.ToArray();
+
+                        Socket.BeginSend(buffer, 0, buffer.Length, 0, SendCallback, ClientState);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Logger.Error($"HALP: {e}");
+                }
+            }
+        }
+
+        public void SendCallback(IAsyncResult ar)
+        {
+
+            ClientState state = (ClientState)ar.AsyncState;
+            Client client;
+            Logger.Info("EndSend");
+            try
+            {
+                SocketError errorCode;
+                var bytesSent = state.WorkSocket.EndSend(ar, out errorCode);
+                if (!GlobalConnectionManifest.ConnectedClients.TryGetValue(state.Id, out client))
+                {
+                    Logger.ErrorFormat("Send: socket should not exist: cid {0}", state.Id);
+                    state.WorkSocket.Close();
+                    state.WorkSocket.Dispose();
+                    return;
+                }
+
+                if (bytesSent == 0 || errorCode != SocketError.Success)
+                {
+                    Logger.ErrorFormat("cid {0}: disconnected");
+                    client.Disconnect();
+                    throw new SocketException((int)errorCode);
+                }
+            }
+            catch (SocketException e)
+            {
+                Logger.Fatal($"Error Code: {e.ErrorCode}, {e.Message}");
+                state.WorkSocket.Close();
+            }
+            catch (ObjectDisposedException)
+            {
+                //client.Disconnect();
+                state.WorkSocket.Close();
+            }
+            state.SendComplete.Set();
+        }
+
         public void Enqueue(ServerPacket packet)
         {
             Logger.DebugFormat("Enqueueing {0}", packet.Opcode);
             ClientState.SendBufferAdd(packet);
+            FlushBuffers();
         }
 
         public void Redirect(Redirect redirect, bool isLogoff = false)

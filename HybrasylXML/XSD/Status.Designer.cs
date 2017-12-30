@@ -31,15 +31,17 @@ namespace Hybrasyl.Statuses
 
         private CastRestrictions _castRestrictions;
 
+        private string _prohibitedMessage;
+
         private string _script;
 
         private Effects _effects;
 
-        private string _duration;
+        private int _duration;
 
-        private string _tick;
+        private int _tick;
 
-        private sbyte _icon;
+        private ushort _icon;
 
         private string _name;
         #endregion
@@ -74,6 +76,18 @@ namespace Hybrasyl.Statuses
             }
         }
 
+        public string ProhibitedMessage
+        {
+            get
+            {
+                return this._prohibitedMessage;
+            }
+            set
+            {
+                this._prohibitedMessage = value;
+            }
+        }
+
         public string Script
         {
             get
@@ -99,7 +113,7 @@ namespace Hybrasyl.Statuses
         }
 
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        public string Duration
+        public int Duration
         {
             get
             {
@@ -112,7 +126,7 @@ namespace Hybrasyl.Statuses
         }
 
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        public string Tick
+        public int Tick
         {
             get
             {
@@ -125,7 +139,7 @@ namespace Hybrasyl.Statuses
         }
 
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        public sbyte Icon
+        public ushort Icon
         {
             get
             {
@@ -303,25 +317,22 @@ namespace Hybrasyl.Statuses
         ReduceDamage = 65536,
 
         /// <remarks/>
-        ProhibitUsage = 131072,
+        AbsorbSpell = 131072,
 
         /// <remarks/>
-        AbsorbSpell = 262144,
+        ProhibitItemUse = 262144,
 
         /// <remarks/>
-        ProhibitItemUse = 524288,
+        ProhibitEquipChange = 524288,
 
         /// <remarks/>
-        ProhibitEquipChange = 1048576,
+        ProhibitSpeech = 1048576,
 
         /// <remarks/>
-        ProhibitSpeech = 2097152,
+        ProhibitWhisper = 2097152,
 
         /// <remarks/>
-        ProhibitWhisper = 4194304,
-
-        /// <remarks/>
-        ProhibitShout = 8388608,
+        ProhibitShout = 4194304,
     }
 
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Xml", "4.7.2102.0")]
@@ -366,6 +377,10 @@ namespace Hybrasyl.Statuses
         private float _healModifier;
 
         private DamageType _damageType;
+
+        private float _reflectChance;
+
+        private float _reflectIntensity;
         #endregion
 
         public StatModifiers()
@@ -616,6 +631,32 @@ namespace Hybrasyl.Statuses
                 this._damageType = value;
             }
         }
+
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        public float ReflectChance
+        {
+            get
+            {
+                return this._reflectChance;
+            }
+            set
+            {
+                this._reflectChance = value;
+            }
+        }
+
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        public float ReflectIntensity
+        {
+            get
+            {
+                return this._reflectIntensity;
+            }
+            set
+            {
+                this._reflectIntensity = value;
+            }
+        }
     }
 
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Xml", "4.7.2102.0")]
@@ -692,10 +733,6 @@ namespace Hybrasyl.Statuses
 
         private string _formula;
 
-        private bool _timeBased;
-
-        private uint _duration;
-
         private DamageType _type;
         #endregion
 
@@ -741,32 +778,6 @@ namespace Hybrasyl.Statuses
         }
 
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        public bool TimeBased
-        {
-            get
-            {
-                return this._timeBased;
-            }
-            set
-            {
-                this._timeBased = value;
-            }
-        }
-
-        [System.Xml.Serialization.XmlAttributeAttribute()]
-        public uint Duration
-        {
-            get
-            {
-                return this._duration;
-            }
-            set
-            {
-                this._duration = value;
-            }
-        }
-
-        [System.Xml.Serialization.XmlAttributeAttribute()]
         public DamageType Type
         {
             get
@@ -795,6 +806,9 @@ namespace Hybrasyl.Statuses
 
         /// <remarks/>
         Threat = 4,
+
+        /// <remarks/>
+        NonLethal = 8,
     }
 
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Xml", "4.7.2102.0")]
@@ -858,10 +872,6 @@ namespace Hybrasyl.Statuses
         private SimpleQuantity _simple;
 
         private string _formula;
-
-        private bool _timeBased;
-
-        private uint _duration;
         #endregion
 
         public Heal()
@@ -892,32 +902,6 @@ namespace Hybrasyl.Statuses
                 this._formula = value;
             }
         }
-
-        [System.Xml.Serialization.XmlAttributeAttribute()]
-        public bool TimeBased
-        {
-            get
-            {
-                return this._timeBased;
-            }
-            set
-            {
-                this._timeBased = value;
-            }
-        }
-
-        [System.Xml.Serialization.XmlAttributeAttribute()]
-        public uint Duration
-        {
-            get
-            {
-                return this._duration;
-            }
-            set
-            {
-                this._duration = value;
-            }
-        }
     }
 
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Xml", "4.7.2102.0")]
@@ -931,12 +915,12 @@ namespace Hybrasyl.Statuses
         #region Private fields
         private ushort _id;
 
-        private ushort _speed;
+        private short _speed;
         #endregion
 
         public Animation()
         {
-            this._speed = ((ushort)(100));
+            this._speed = ((short)(100));
         }
 
         [System.Xml.Serialization.XmlAttributeAttribute()]
@@ -953,8 +937,8 @@ namespace Hybrasyl.Statuses
         }
 
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        [System.ComponentModel.DefaultValueAttribute(typeof(ushort), "100")]
-        public ushort Speed
+        [System.ComponentModel.DefaultValueAttribute(typeof(short), "100")]
+        public short Speed
         {
             get
             {
@@ -977,13 +961,10 @@ namespace Hybrasyl.Statuses
 
         #region Private fields
         private Animation _target;
-
-        private Animation _spellEffect;
         #endregion
 
         public StatusAnimations()
         {
-            this._spellEffect = new Animation();
             this._target = new Animation();
         }
 
@@ -996,18 +977,6 @@ namespace Hybrasyl.Statuses
             set
             {
                 this._target = value;
-            }
-        }
-
-        public Animation SpellEffect
-        {
-            get
-            {
-                return this._spellEffect;
-            }
-            set
-            {
-                this._spellEffect = value;
             }
         }
     }
@@ -1032,6 +1001,8 @@ namespace Hybrasyl.Statuses
         private StatModifiers _statModifiers;
 
         private Conditions _conditions;
+
+        private string _message;
         #endregion
 
         public StatusAnimations Animations
@@ -1103,6 +1074,18 @@ namespace Hybrasyl.Statuses
             set
             {
                 this._conditions = value;
+            }
+        }
+
+        public string Message
+        {
+            get
+            {
+                return this._message;
+            }
+            set
+            {
+                this._message = value;
             }
         }
     }

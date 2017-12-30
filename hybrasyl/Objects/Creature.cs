@@ -87,9 +87,16 @@ namespace Hybrasyl.Objects
         public long BonusAc { get; set; }
         public long BonusMr { get; set; }
         public long BonusRegen { get; set; }
+        public float ReflectChance { get; set; }
+        public float ReflectIntensity { get; set; }
+        public float DamageModifier { get; set; }
+        public float HealModifier { get; set; }
+        public Enums.DamageType DamageTypeOverride { get; set; }
 
         public Enums.Element OffensiveElement { get; set; }
         public Enums.Element DefensiveElement { get; set; }
+        public Enums.Element OffensiveElementOverride { get; set; }
+        public Enums.Element DefensiveElementOverride { get; set; }
 
         public ushort MapId { get; protected set; }
         public byte MapX { get; protected set; }
@@ -109,7 +116,14 @@ namespace Hybrasyl.Objects
             Gold = 0;
             Inventory = new Inventory(59);
             Equipment = new Inventory(18);
+            ReflectChance = 0;
+            ReflectIntensity = 0;
+            DamageModifier = 1;
+            HealModifier = 1;
+            OffensiveElementOverride = Enums.Element.None;
+            DefensiveElementOverride = Enums.Element.None;
         }
+
 
         public override void OnClick(User invoker)
         {

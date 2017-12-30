@@ -290,6 +290,7 @@
               <xs:enumeration value="Scaled" />
               <xs:enumeration value="Resistance" />
               <xs:enumeration value="Threat" />
+              <xs:enumeration value="NonLethal"/>
             </xs:restriction>
           </xs:simpleType>
         </xs:list>
@@ -306,8 +307,6 @@
         <xs:element name="Formula" type="hyb:String16" />
       </xs:sequence>
     </xs:sequence>
-    <xs:attribute name="TimeBased" type="xs:boolean"/>
-    <xs:attribute name="Duration" type="xs:unsignedInt" />
     <xs:attribute name="Type" type="hyb:DamageType" />
   </xs:complexType>
 
@@ -317,8 +316,6 @@
       <xs:element name="Simple" type="actions:SimpleQuantity" />
       <xs:element name="Formula" type="hyb:String16" />
     </xs:sequence>
-    <xs:attribute name="TimeBased" type="xs:boolean" />
-    <xs:attribute name="Duration" type="xs:unsignedInt" />
   </xs:complexType>
 
   <!-- Animations container element -->
@@ -341,7 +338,7 @@
   <!-- Animation set -->
   <xs:complexType name="Animation">
     <xs:attribute name="Id" type="xs:unsignedShort" use="required" />
-    <xs:attribute name="Speed" type="xs:unsignedShort" use="optional" default="100" />
+    <xs:attribute name="Speed" type="xs:short" use="optional" default="100" />
   </xs:complexType>
 
   <!-- Effects type -->
@@ -394,6 +391,8 @@
     <xs:attribute name="DamageModifier" type="xs:float"/>
     <xs:attribute name="HealModifier" type="xs:float"/>
     <xs:attribute name="DamageType" type="hyb:DamageType"/>
+    <xs:attribute name="ReflectChance" type="xs:float"/>
+    <xs:attribute name="ReflectIntensity" type="xs:float"/>
   </xs:complexType>
 
   <!-- Restrictions on casting, such as types of equipment, or
@@ -454,6 +453,7 @@
       <xs:element name="Effects" type="actions:Effects" minOccurs="0" maxOccurs="1" />
       <xs:element name="Script" type="xs:string" minOccurs="0" maxOccurs="1"/>
       <xs:element name="Statuses" type="actions:Statuses" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="IncrementalUses" type="hyb:String8" minOccurs="0" maxOccurs="1"/>
     </xs:all>
     <!-- Castable attributes -->
     <xs:attribute name="Type" use="required" />

@@ -172,6 +172,7 @@ namespace Hybrasyl.Castables
         }
 
         public byte CastableLevel { get; set; }
+        public int Uses { get; set; }
 
         public byte GetMaxLevelByClass(Class castableClass)
         {

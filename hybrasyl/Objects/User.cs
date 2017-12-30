@@ -176,7 +176,7 @@ namespace Hybrasyl.Objects
         [JsonProperty]
         public GuildMembership Guild { get; set; }
 
-        [JsonProperty] private ConcurrentDictionary<ushort, IPlayerStatus> _currentStatuses;
+        [JsonProperty] private ConcurrentDictionary<ushort, ICreatureStatus> _currentStatuses;
 
         private Nation _nation;
 
@@ -353,7 +353,7 @@ namespace Hybrasyl.Objects
         /// Apply a given status to a player.
         /// </summary>
         /// <param name="status">The status to apply to the player.</param>
-        public bool ApplyStatus(IPlayerStatus status)
+        public bool ApplyStatus(ICreatureStatus status)
         {
             if (!_currentStatuses.TryAdd(status.Icon, status)) return false;
             SendStatusUpdate(status);
@@ -366,7 +366,7 @@ namespace Hybrasyl.Objects
         /// </summary>
         /// <param name="status">The status to remove.</param>
         /// <param name="onEnd">Whether or not to run the onEnd event for the status removal.</param>
-        private void _removeStatus(IPlayerStatus status, bool onEnd = true)
+        private void _removeStatus(ICreatureStatus status, bool onEnd = true)
         {
             if (onEnd)
                 status.OnEnd();
@@ -381,13 +381,13 @@ namespace Hybrasyl.Objects
         /// <returns></returns>
         public bool RemoveStatus(ushort icon, bool onEnd = true)
         {
-            IPlayerStatus status;
+            ICreatureStatus status;
             if (!_currentStatuses.TryRemove(icon, out status)) return false;
             _removeStatus(status, onEnd);
             return true;
         }
 
-        public bool TryGetStatus(string name, out IPlayerStatus status)
+        public bool TryGetStatus(string name, out ICreatureStatus status)
         {
             status = _currentStatuses.Values.FirstOrDefault(s => s.Name == name);
             return status != null;
@@ -441,7 +441,7 @@ namespace Hybrasyl.Objects
         /// <param name="status">The status to update on the client side.</param>
         /// <param name="remove">Force removal of the status</param>
 
-        public virtual void SendStatusUpdate(IPlayerStatus status, bool remove = false)
+        public virtual void SendStatusUpdate(ICreatureStatus status, bool remove = false)
         {
             var statuspacket = new ServerPacketStructures.StatusBar { Icon = status.Icon };
             var elapsed = DateTime.Now - status.Start;
@@ -613,8 +613,8 @@ namespace Hybrasyl.Objects
         {
             if (!Status.HasFlag(PlayerCondition.InComa)) return;
             ToggleNearDeath();
-            var bar = RemoveStatus(NearDeathStatus.Icon, false);
-            Logger.Debug($"EndComa: {Name}: removestatus for coma is {bar}");
+            //var bar = RemoveStatus(NearDeathStatus.Icon, false);
+            //Logger.Debug($"EndComa: {Name}: removestatus for coma is {bar}");
 
             foreach (var status in _currentStatuses.Values)
             {
@@ -729,7 +729,7 @@ namespace Hybrasyl.Objects
             Status = PlayerCondition.Alive;
             Group = null;
             Flags = new Dictionary<string, bool>();
-            _currentStatuses = new ConcurrentDictionary<ushort, IPlayerStatus>();
+            _currentStatuses = new ConcurrentDictionary<ushort, ICreatureStatus>();
 
             #region Appearance defaults
             RestPosition = RestPosition.Standing;
@@ -1260,8 +1260,10 @@ namespace Hybrasyl.Objects
         internal void UseSkill(byte slot)
         {
             var castable = SkillBook[slot];
+       
 
             Attack(castable);
+            
         }
 
         internal void UseSpell(byte slot, uint target = 0)
@@ -2156,7 +2158,8 @@ namespace Hybrasyl.Objects
             {
                 Hp = 1;
                 if (Group != null)
-                    ApplyStatus(new NearDeathStatus(this, 30, 1));
+                    Logger.Info("hi");
+                    //ApplyStatus(new NearDeathStatus(this, 30, 1));
                 else
                     OnDeath();
             }

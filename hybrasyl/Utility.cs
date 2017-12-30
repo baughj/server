@@ -125,16 +125,6 @@ namespace Hybrasyl
 
         public const string SPIRIT_FORBIDDEN = "Spirits cannot do that.";
 
-        public static Dictionary<PlayerCondition, string> STATUS_RESTRICTION_MESSAGES = new Dictionary
-            <PlayerCondition, string>
-        {
-            {PlayerCondition.InComa, NearDeathStatus.ActionProhibitedMessage},
-            {PlayerCondition.Asleep, SleepStatus.ActionProhibitedMessage},
-            {PlayerCondition.Frozen, FreezeStatus.ActionProhibitedMessage},
-            {PlayerCondition.Paralyzed, ParalyzeStatus.ActionProhibitedMessage},
-            {PlayerCondition.Alive, Constants.SPIRIT_FORBIDDEN}
-
-        };
         // Idle settings
         // A client counts as idle after IDLE_TIME seconds without any packet receipt (except for heartbeat opcodes)
         // The idle check job will run every IDLE_CHECK seconds

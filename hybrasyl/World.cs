@@ -1555,23 +1555,23 @@ namespace Hybrasyl
 
                     case "/applystatus":
                         {
-                            var status = args[1];
-                            if (status.ToLower() == "poison")
-                            {
-                                user.ApplyStatus(new PoisonStatus(user, 30, 1, 5));
-                            }
-                            if (status.ToLower() == "sleep")
-                            {
-                                user.ApplyStatus(new SleepStatus(user, 30, 1));
-                            }
-                            if (status.ToLower() == "paralyze")
-                            {
-                                user.ApplyStatus(new ParalyzeStatus(user, 30, 1));
-                            }
-                            if (status.ToLower() == "blind")
-                            {
-                                user.ApplyStatus(new BlindStatus(user, 30, 1));
-                            }
+                            //var status = args[1];
+                            //if (status.ToLower() == "poison")
+                            //{
+                            //    user.ApplyStatus(new PoisonStatus(user, 30, 1, 5));
+                            //}
+                            //if (status.ToLower() == "sleep")
+                            //{
+                            //    user.ApplyStatus(new SleepStatus(user, 30, 1));
+                            //}
+                            //if (status.ToLower() == "paralyze")
+                            //{
+                            //    user.ApplyStatus(new ParalyzeStatus(user, 30, 1));
+                            //}
+                            //if (status.ToLower() == "blind")
+                            //{
+                            //    user.ApplyStatus(new BlindStatus(user, 30, 1));
+                            //}
                         }
                         break;
 
@@ -4489,7 +4489,8 @@ namespace Hybrasyl
                                     if (prohibitedCondition == null) continue;
                                     Logger.InfoFormat($"{user.Status} : {prohibitedCondition.Condition} : {user.Status.HasFlag(prohibitedCondition.Condition)}");
                                     if (!user.Status.HasFlag(prohibitedCondition.Condition)) continue;
-                                    user.SendSystemMessage(Constants.STATUS_RESTRICTION_MESSAGES[prohibitedCondition.Condition]);
+                                    // TODO: FIX 
+                                    // user.SendSystemMessage(Constants.STATUS_RESTRICTION_MESSAGES[prohibitedCondition.Condition]);
                                     ignore = true;
                                 }
                                 foreach (var required in method.GetCustomAttributes(typeof(RequiredCondition), true))
@@ -4497,7 +4498,8 @@ namespace Hybrasyl
                                     var requiredCondition = required as ProhibitedCondition;
                                     if (requiredCondition == null) continue;
                                     if (user.Status.HasFlag(requiredCondition.Condition)) continue;
-                                    user.SendSystemMessage(Constants.STATUS_RESTRICTION_MESSAGES[requiredCondition.Condition]);
+                                    // TODO: FIXXX
+                                    // user.SendSystemMessage(Constants.STATUS_RESTRICTION_MESSAGES[requiredCondition.Condition]);
                                     ignore = true;
                                 }
 

@@ -373,10 +373,6 @@ namespace Hybrasyl
             _loginThread = new Thread(new ThreadStart(Login.StartListening));
             _worldThread = new Thread(new ThreadStart(World.StartListening));
 
-            _lobbySendThread = new Thread(new ThreadStart(Lobby.SendLoop));
-            _loginSendThread = new Thread(new ThreadStart(Login.SendLoop));
-            _worldSendThread = new Thread(new ThreadStart(World.SendLoop));
-
             _spawnThread = new Thread(_monolith.Start);
 
             _controlThread = new Thread(_monolithControl.Start);
@@ -392,10 +388,6 @@ namespace Hybrasyl
             _lobbyThread.Start();
             _loginThread.Start();
             _worldThread.Start();
-
-            _lobbySendThread.Start();
-            _loginSendThread.Start();
-            _worldSendThread.Start();
 
             _spawnThread.Start();
             _controlThread.Start();
