@@ -216,6 +216,9 @@ namespace Hybrasyl
             SocketError errorCode = SocketError.SocketError;
             int bytesRead = 0;
             ClientPacket receivedPacket;
+          
+            Logger.WarnFormat($"SocketConnected: {state.WorkSocket.Connected}, IAsyncResult: Completed: {ar.IsCompleted}, CompletedSynchronously: {ar.CompletedSynchronously}, queue size: {state.Buffer.Length}");
+            Logger.Info("Running read callback");
 
             if (!GlobalConnectionManifest.ConnectedClients.TryGetValue(state.Id, out client))
             {
@@ -238,17 +241,14 @@ namespace Hybrasyl
                 bytesRead = state.WorkSocket.EndReceive(ar, out errorCode);
                 if (bytesRead == 0 || errorCode != SocketError.Success)
                 {
+                    Logger.Info($"bytesRead: {bytesRead}, errorCode: {errorCode}");
                     client.Disconnect();
                 }
             }
-            catch (SocketException e)
+            catch (Exception e)
             {
-                Logger.Fatal($"ErrorCode: {e.ErrorCode}, {e.Message}");
-                state.WorkSocket.Close();
-            }
-            catch (ObjectDisposedException)
-            {
-                state.WorkSocket.Close();
+                Logger.Fatal($"EndReceive Error:  {e.Message}");
+                client.Disconnect();
             }
 
             while (client.ClientState.TryGetPacket(out receivedPacket))

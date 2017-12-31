@@ -43,11 +43,34 @@ namespace Hybrasyl
         public ManualResetEvent SendComplete = new ManualResetEvent(false);
 
         public bool Connected { get; set; }
+        public static readonly ILog Logger = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
 
         public long Id { get; }
 
-        public object Lock = new object();
+        private object _recvlock = new object();
+        public object ReceiveLock
+        {
+            get
+            {
+                System.Diagnostics.StackFrame frame = new System.Diagnostics.StackFrame(1);
+                Logger.Info($"Lock acquired by: {frame.GetMethod().Name} on thread {Thread.CurrentThread.ManagedThreadId}");
+                return _recvlock;
+            }
+
+        }
+
+        private object _sendlock = new object();
+        public object SendLock
+        {
+            get
+            {
+                System.Diagnostics.StackFrame frame = new System.Diagnostics.StackFrame(1);
+                Logger.Info($"Lock acquired by: {frame.GetMethod().Name} on thread {Thread.CurrentThread.ManagedThreadId}");
+                return _sendlock;
+            }
+
+        }
 
         public Socket WorkSocket { get; }
 
@@ -60,15 +83,23 @@ namespace Hybrasyl
 
         public byte[] Buffer => _buffer;
 
+        public IEnumerable<byte> ReceiveBufferTake(int range)
+        {
+            lock (ReceiveLock)
+            {
+                return _buffer.Take(range);
+            }
+        }
 
         public IEnumerable<byte> ReceiveBufferPop(int range)
         {
-            lock (_buffer)
+            lock (ReceiveLock)
             {
                 var ret = _buffer.Take(range);
                 var asList = _buffer.ToList();
                 asList.RemoveRange(0, range);
-                _buffer = asList.ToArray();
+                _buffer = new byte[1024];
+                Array.ConstrainedCopy(asList.ToArray(), 0, _buffer, 0, asList.ToArray().Length);
                 return ret;
             }
         }
@@ -76,7 +107,7 @@ namespace Hybrasyl
         public bool TryGetPacket(out ClientPacket packet)
         {
             packet = null;
-            lock (_buffer)
+            lock (ReceiveLock)
             {
                 if (_buffer.Length != 0 && _buffer[0] == 0xAA && _buffer.Length > 3)
                 {
@@ -87,10 +118,9 @@ namespace Hybrasyl
                         packet = new ClientPacket(ReceiveBufferPop(packetLength).ToArray());
                         return true;
                     }
-                }               
+                }
+                return false;
             }
-            packet = null;
-            return false;
         }
 
         public void ReceiveBufferAdd(ClientPacket packet)
@@ -116,7 +146,7 @@ namespace Hybrasyl
 
         public void ResetReceive()
         {
-            lock (_buffer)
+            lock (ReceiveLock)
             {
                 _buffer = new byte[BufferSize];
             }
@@ -433,7 +463,7 @@ namespace Hybrasyl
 
         public void FlushBuffers()
         {
-            lock (SendLock)
+            lock (ClientState.SendLock)
             {
                 try
                 {
@@ -531,9 +561,9 @@ namespace Hybrasyl
 
         public void SendCallback(IAsyncResult ar)
         {
-
             ClientState state = (ClientState)ar.AsyncState;
             Client client;
+            Logger.WarnFormat($"SocketConnected: {state.WorkSocket.Connected}, IAsyncResult: Completed: {ar.IsCompleted}, CompletedSynchronously: {ar.CompletedSynchronously}");
             Logger.Info("EndSend");
             try
             {
