@@ -78,6 +78,25 @@ namespace Hybrasyl
             }
         }
 
+        public bool TryGetPacket(out ClientPacket packet)
+        {
+            lock (_buffer)
+            {
+                if (_buffer[0] == 0xAA && _buffer.Length > 3)
+                {
+                    var packetLength = (_buffer[1] << 8) + _buffer[2] + 3;
+                    // Complete packet, pop it off and return it
+                    if (_buffer.Length >= packetLength)
+                    {
+                        packet = new ClientPacket(ReceiveBufferPop(packetLength).ToArray());
+                        return true;
+                    }
+                }               
+            }
+            packet = null;
+            return false;
+        }
+
         public void SendBufferAdd(ServerPacket packet)
         {
             _sendBuffer.Enqueue(packet);

@@ -121,7 +121,7 @@ namespace Hybrasyl
         //            try
         //            {
         //                if (client.IsReceiving) continue;
-
+                        
         //                ServerPacket packet;
         //                if (!client.ClientState.SendBufferTake(out packet)) continue;
         //                if (packet.ShouldEncrypt)
@@ -151,7 +151,7 @@ namespace Hybrasyl
         //                        Logger.Fatal(e.Message);
         //                        client.Disconnect();
         //                    }
-
+                            
         //                }
 
         //            }
@@ -159,24 +159,24 @@ namespace Hybrasyl
         //            {
         //               Logger.Fatal(e.Message);
         //            }
-
+                    
         //        }
-
+                
         //        Thread.Sleep(100);
         //    }
         //}
 
-
+   
         public virtual void AcceptConnection(IAsyncResult ar)
         {
             // TODO: @norrismiv async callbacks+inheritance? and/or can these callbacks suck less?
             AllDone.Set();
-            Socket clientSocket = (Socket)ar.AsyncState;
+            Socket clientSocket = (Socket) ar.AsyncState;
             Socket handler = clientSocket.EndAccept(ar);
             Client client = new Client(handler, this);
             Clients.TryAdd(handler.Handle, client);
             GlobalConnectionManifest.RegisterClient(client);
-
+            
             if (this is Lobby)
             {
                 var x7E = new ServerPacket(0x7E);
@@ -208,6 +208,123 @@ namespace Hybrasyl
                 handler.Close();
             }
         }
+
+        public void ReadCallback(IAsyncResult ar)
+        {
+            ClientState state = (ClientState) ar.AsyncState;
+            Client client;
+            SocketError errorCode = SocketError.SocketError;
+            int bytesRead = 0;
+
+            try
+            {
+                bytesRead = state.WorkSocket.EndReceive(ar, out errorCode);
+                if (bytesRead == 0 || errorCode != SocketError.Success)
+                {
+                    client.Disconnect();
+                    return;
+                }
+            }
+            catch (SocketException e)
+            {
+                Logger.Fatal($"ErrorCode: {e.ErrorCode}, {e.Message}");
+                state.WorkSocket.Close();
+            }
+            catch (ObjectDisposedException)
+            {
+                state.WorkSocket.Close();
+            }
+
+            if (!GlobalConnectionManifest.ConnectedClients.TryGetValue(state.Id, out client))
+            {
+                // Is this a redirect?
+                Redirect redirect;
+                if (!GlobalConnectionManifest.TryGetRedirect(state.Id, out redirect))
+                {
+                    Logger.ErrorFormat("Receive: data from unknown client (id {0}, closing connection", state.Id);
+                    state.WorkSocket.Close();
+                    state.WorkSocket.Dispose();
+                    return;
+                }
+                client = redirect.Client;
+                client.ClientState = state;
+                GlobalConnectionManifest.RegisterClient(client);
+            }
+
+            ClientPacket receivedPacket;
+
+            while (client.ClientState.TryGetPacket(out receivedPacket))
+            {
+                if (receivedPacket.ShouldEncrypt)
+                {
+                    receivedPacket.Decrypt(client);
+                }
+
+                if (receivedPacket.Opcode == 0x39 || receivedPacket.Opcode == 0x3A)
+                    receivedPacket.DecryptDialog();
+                try
+                {
+                    if (this is Lobby)
+                    {
+                        Logger.DebugFormat("Lobby: 0x{0:X2}", receivedPacket.Opcode);
+                        var handler = (this as Lobby).PacketHandlers[receivedPacket.Opcode];
+                        handler.Invoke(client, receivedPacket);
+                        Logger.DebugFormat("Lobby packet done");
+                        client.UpdateLastReceived();
+                    }
+                    else if (this is Login)
+                    {
+                        Logger.DebugFormat("Login: 0x{0:X2}", receivedPacket.Opcode);
+                        var handler = (this as Login).PacketHandlers[receivedPacket.Opcode];
+                        handler.Invoke(client, receivedPacket);
+                        Logger.DebugFormat("Login packet done");
+                        client.UpdateLastReceived();
+                    }
+                    else
+                    {
+                        client.UpdateLastReceived(receivedPacket.Opcode != 0x45 &&
+                                                  receivedPacket.Opcode != 0x75);
+                        Logger.DebugFormat("Queuing: 0x{0:X2}", receivedPacket.Opcode);
+                        // Check for throttling
+                        var throttleResult = PacketThrottleCheck(client, receivedPacket);
+                        if (throttleResult == ThrottleResult.OK || throttleResult == ThrottleResult.ThrottleEnd || throttleResult == ThrottleResult.SquelchEnd)
+                        {
+                            World.MessageQueue.Add(new HybrasylClientMessage(receivedPacket,
+                                client.ConnectionId));
+                        }
+                    }
+
+                }
+                catch (Exception e)
+                {
+                    Logger.ErrorFormat("EXCEPTION IN HANDLING: 0x{0:X2}: {1}", receivedPacket.Opcode, e);
+                }
+            }
+            ContinueReceiving(state, client);
+        }
+
+        private void ContinueReceiving(ClientState state, Client client)
+        {
+            // Continue getting dem bytes
+            try
+            {
+                state.WorkSocket.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0,
+                    new AsyncCallback(this.ReadCallback), state);
+                Logger.DebugFormat("Triggering receive callback");
+            }
+            catch (ObjectDisposedException e)
+            {
+                Logger.Fatal(e.Message);
+                //client.Disconnect();
+                state.WorkSocket.Close();
+            }
+            catch (SocketException e)
+            {
+                Logger.Fatal(e.Message);
+                client.Disconnect();
+            }
+        }
+
 
         public virtual void Shutdown()
         {
