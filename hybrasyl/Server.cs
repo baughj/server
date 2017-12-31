@@ -251,7 +251,6 @@ namespace Hybrasyl
                 state.WorkSocket.Close();
             }
 
-
             while (client.ClientState.TryGetPacket(out receivedPacket))
             {
                client.Enqueue(receivedPacket);
@@ -266,7 +265,7 @@ namespace Hybrasyl
             {
                 state.WorkSocket.BeginReceive(state.Buffer, 0, state.Buffer.Length, 0,
                     new AsyncCallback(this.ReadCallback), state);
-                Logger.DebugFormat("Triggering receive callback");
+                Logger.InfoFormat("Triggering receive callback");
             }
             catch (ObjectDisposedException e)
             {

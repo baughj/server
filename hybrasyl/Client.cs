@@ -75,6 +75,7 @@ namespace Hybrasyl
 
         public bool TryGetPacket(out ClientPacket packet)
         {
+            packet = null;
             lock (_buffer)
             {
                 if (_buffer.Length != 0 && _buffer[0] == 0xAA && _buffer.Length > 3)
