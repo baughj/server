@@ -80,9 +80,10 @@ namespace Hybrasyl
 
         public bool TryGetPacket(out ClientPacket packet)
         {
+            packet = null;
             lock (_buffer)
             {
-                if (_buffer[0] == 0xAA && _buffer.Length > 3)
+                if (_buffer.Length > 3 &&_buffer[0] == 0xAA)
                 {
                     var packetLength = (_buffer[1] << 8) + _buffer[2] + 3;
                     // Complete packet, pop it off and return it
@@ -93,7 +94,6 @@ namespace Hybrasyl
                     }
                 }               
             }
-            packet = null;
             return false;
         }
 
