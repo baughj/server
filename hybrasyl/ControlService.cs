@@ -54,15 +54,16 @@ namespace Hybrasyl
 
         public static string GetMotd()
         {
-            using (HttpClient client = new HttpClient())
-            {
-                client.BaseAddress = new Uri($"http://{Game.Config.ApiEndpoints.RemoteAdminHost.BindAddress}/api/news");
+            return "";
+            //using (HttpClient client = new HttpClient())
+            //{
+            //    client.BaseAddress = new Uri($"http://{Game.Config.ApiEndpoints.RemoteAdminHost.BindAddress}/api/news");
 
-                var json = $"[{client.GetAsync(client.BaseAddress + "/GetMotd").Result.Content.ReadAsStringAsync().Result}]";
+            //    var json = $"[{client.GetAsync(client.BaseAddress + "/GetMotd").Result.Content.ReadAsStringAsync().Result}]";
 
-                dynamic motd = JArray.Parse(json);
-                return motd[0].Data[0].Message;
-            }
+            //    dynamic motd = JArray.Parse(json);
+            //    return motd[0].Data[0].Message;
+            //}
         }
     }
 }

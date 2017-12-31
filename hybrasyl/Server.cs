@@ -254,50 +254,7 @@ namespace Hybrasyl
 
             while (client.ClientState.TryGetPacket(out receivedPacket))
             {
-                if (receivedPacket.ShouldEncrypt)
-                {
-                    receivedPacket.Decrypt(client);
-                }
-
-                if (receivedPacket.Opcode == 0x39 || receivedPacket.Opcode == 0x3A)
-                    receivedPacket.DecryptDialog();
-                try
-                {
-                    if (this is Lobby)
-                    {
-                        Logger.DebugFormat("Lobby: 0x{0:X2}", receivedPacket.Opcode);
-                        var handler = (this as Lobby).PacketHandlers[receivedPacket.Opcode];
-                        handler.Invoke(client, receivedPacket);
-                        Logger.DebugFormat("Lobby packet done");
-                        client.UpdateLastReceived();
-                    }
-                    else if (this is Login)
-                    {
-                        Logger.DebugFormat("Login: 0x{0:X2}", receivedPacket.Opcode);
-                        var handler = (this as Login).PacketHandlers[receivedPacket.Opcode];
-                        handler.Invoke(client, receivedPacket);
-                        Logger.DebugFormat("Login packet done");
-                        client.UpdateLastReceived();
-                    }
-                    else
-                    {
-                        client.UpdateLastReceived(receivedPacket.Opcode != 0x45 &&
-                                                  receivedPacket.Opcode != 0x75);
-                        Logger.DebugFormat("Queuing: 0x{0:X2}", receivedPacket.Opcode);
-                        // Check for throttling
-                        var throttleResult = PacketThrottleCheck(client, receivedPacket);
-                        if (throttleResult == ThrottleResult.OK || throttleResult == ThrottleResult.ThrottleEnd || throttleResult == ThrottleResult.SquelchEnd)
-                        {
-                            World.MessageQueue.Add(new HybrasylClientMessage(receivedPacket,
-                                client.ConnectionId));
-                        }
-                    }
-
-                }
-                catch (Exception e)
-                {
-                    Logger.ErrorFormat("EXCEPTION IN HANDLING: 0x{0:X2}: {1}", receivedPacket.Opcode, e);
-                }
+               client.Enqueue(receivedPacket);
             }
             ContinueReceiving(state, client);
         }

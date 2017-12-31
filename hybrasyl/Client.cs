@@ -29,6 +29,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using Hybrasyl.Enums;
 
 namespace Hybrasyl
 {
@@ -38,6 +39,7 @@ namespace Hybrasyl
         private byte[] _buffer = new byte[BufferSize];
         public bool Recieving;
         private ConcurrentQueue<ServerPacket> _sendBuffer = new ConcurrentQueue<ServerPacket>();
+        private ConcurrentQueue<ClientPacket> _receiveBuffer = new ConcurrentQueue<ClientPacket>();
         public ManualResetEvent SendComplete = new ManualResetEvent(false);
 
         public bool Connected { get; set; }
@@ -58,13 +60,6 @@ namespace Hybrasyl
 
         public byte[] Buffer => _buffer;
 
-        public IEnumerable<byte> ReceiveBufferTake(int range)
-        {
-            lock (_buffer)
-            {
-                return _buffer.Take(range);
-            }
-        }
 
         public IEnumerable<byte> ReceiveBufferPop(int range)
         {
@@ -82,7 +77,7 @@ namespace Hybrasyl
         {
             lock (_buffer)
             {
-                if (_buffer[0] == 0xAA && _buffer.Length > 3)
+                if (_buffer.Length != 0 && _buffer[0] == 0xAA && _buffer.Length > 3)
                 {
                     var packetLength = (_buffer[1] << 8) + _buffer[2] + 3;
                     // Complete packet, pop it off and return it
@@ -96,6 +91,17 @@ namespace Hybrasyl
             packet = null;
             return false;
         }
+
+        public void ReceiveBufferAdd(ClientPacket packet)
+        {
+            _receiveBuffer.Enqueue(packet);
+        }
+
+        public bool ReceiveBufferTake(out ClientPacket packet)
+        {
+            return _receiveBuffer.TryDequeue(out packet);
+        }
+
 
         public void SendBufferAdd(ServerPacket packet)
         {
@@ -181,6 +187,7 @@ namespace Hybrasyl
         public string NewCharacterPassword { get; set; }
 
         public object SendLock { get; set; }
+        public object ReceiveLock { get; set; }
 
         private int _heartbeatA = 0;
         private int _heartbeatB = 0;
@@ -387,6 +394,7 @@ namespace Hybrasyl
             _lastReceived = DateTime.Now.Ticks;
             GlobalConnectionManifest.RegisterClient(this);
             SendLock = new object();
+            ReceiveLock = new object();
 
             ConnectedSince = DateTime.Now.Ticks;
         }
@@ -458,6 +466,68 @@ namespace Hybrasyl
             }
         }
 
+        public void FlushReceive()
+        {
+            lock (ReceiveLock)
+            {
+                try
+                {
+                    ClientPacket packet;
+                    while (ClientState.ReceiveBufferTake(out packet))
+                    {
+                        if (packet.ShouldEncrypt)
+                        {
+                            packet.Decrypt(this);
+                        }
+
+                        if (packet.Opcode == 0x39 || packet.Opcode == 0x3A)
+                            packet.DecryptDialog();
+                        try
+                        {
+                            if (Server is Lobby)
+                            {
+                                Logger.DebugFormat("Lobby: 0x{0:X2}", packet.Opcode);
+                                var handler = (Server as Lobby).PacketHandlers[packet.Opcode];
+                                handler.Invoke(this, packet);
+                                Logger.DebugFormat("Lobby packet done");
+                                UpdateLastReceived();
+                            }
+                            else if (Server is Login)
+                            {
+                                Logger.DebugFormat("Login: 0x{0:X2}", packet.Opcode);
+                                var handler = (Server as Login).PacketHandlers[packet.Opcode];
+                                handler.Invoke(this, packet);
+                                Logger.DebugFormat("Login packet done");
+                                UpdateLastReceived();
+                            }
+                            else
+                            {
+                                UpdateLastReceived(packet.Opcode != 0x45 &&
+                                                          packet.Opcode != 0x75);
+                                Logger.DebugFormat("Queuing: 0x{0:X2}", packet.Opcode);
+                                // Check for throttling
+                                var throttleResult = Server.PacketThrottleCheck(this, packet);
+                                if (throttleResult == ThrottleResult.OK || throttleResult == ThrottleResult.ThrottleEnd || throttleResult == ThrottleResult.SquelchEnd)
+                                {
+                                    World.MessageQueue.Add(new HybrasylClientMessage(packet, ConnectionId));
+                                }
+                            }
+
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.ErrorFormat("EXCEPTION IN HANDLING: 0x{0:X2}: {1}", packet.Opcode, e);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    throw;
+                }
+            }
+        }
+
         public void SendCallback(IAsyncResult ar)
         {
 
@@ -501,6 +571,13 @@ namespace Hybrasyl
             Logger.DebugFormat("Enqueueing {0}", packet.Opcode);
             ClientState.SendBufferAdd(packet);
             FlushBuffers();
+        }
+
+        public void Enqueue(ClientPacket packet)
+        {
+            Logger.DebugFormat($"Enqueueing ClientPacket {packet.Opcode}");
+            ClientState.ReceiveBufferAdd(packet);
+            FlushReceive();
         }
 
         public void Redirect(Redirect redirect, bool isLogoff = false)
