@@ -215,25 +215,7 @@ namespace Hybrasyl
             Client client;
             SocketError errorCode = SocketError.SocketError;
             int bytesRead = 0;
-
-            try
-            {
-                bytesRead = state.WorkSocket.EndReceive(ar, out errorCode);
-                if (bytesRead == 0 || errorCode != SocketError.Success)
-                {
-                    client.Disconnect();
-                    return;
-                }
-            }
-            catch (SocketException e)
-            {
-                Logger.Fatal($"ErrorCode: {e.ErrorCode}, {e.Message}");
-                state.WorkSocket.Close();
-            }
-            catch (ObjectDisposedException)
-            {
-                state.WorkSocket.Close();
-            }
+            ClientPacket receivedPacket;
 
             if (!GlobalConnectionManifest.ConnectedClients.TryGetValue(state.Id, out client))
             {
@@ -251,7 +233,24 @@ namespace Hybrasyl
                 GlobalConnectionManifest.RegisterClient(client);
             }
 
-            ClientPacket receivedPacket;
+            try
+            {
+                bytesRead = state.WorkSocket.EndReceive(ar, out errorCode);
+                if (bytesRead == 0 || errorCode != SocketError.Success)
+                {
+                    client.Disconnect();
+                }
+            }
+            catch (SocketException e)
+            {
+                Logger.Fatal($"ErrorCode: {e.ErrorCode}, {e.Message}");
+                state.WorkSocket.Close();
+            }
+            catch (ObjectDisposedException)
+            {
+                state.WorkSocket.Close();
+            }
+
 
             while (client.ClientState.TryGetPacket(out receivedPacket))
             {
