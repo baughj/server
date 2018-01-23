@@ -428,6 +428,54 @@ namespace Hybrasyl
             Error = 255
         }
 
+        public enum OrgType
+        {
+            Internal = int.MinValue,
+            Preorganized = 0,
+            Motley = 1,
+            Guild = 2,
+            Religious = 4,
+            Judicial = 8,
+            Political = 16,
+            Enforcement = 32,
+            Regional = 64,
+            Continental = 128,
+            College = 256,
+            CraftGuild = 512,
+        }
+
+        public enum OrgAction : Int64
+        {
+            None = 0,
+            Chat = 1,
+            BoardRead = 2,
+            BoardPost = 4,
+            Admit = 8,
+            Invite = 16,
+            Promote = 32,
+            Demote = 64,
+            Kick = 128,
+            Mute = 256,
+            SetMotd = 512,
+            BoardDelete = 1024,
+            IssueWarrant = 2048,
+            Arrest = 4096,
+            Sponsor = 8192,
+            Denounce = 16384,
+            Attack = 32768,
+            Support = 65536,
+            HostEvent = 131072,
+            Execute = 262144,
+            Remove = 524288,
+            StartGeas = 1048576,
+            FinishGeas = 2097152,
+            Bar = 4194304,
+            Probation = 8388608,
+            Approval = 16777216,
+            Disapproval = 33554432,
+            ConvertOrg = 67108864,
+            ConfigOrg = 134217728           
+        }
 
         public class EnumUtil
         {

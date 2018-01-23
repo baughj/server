@@ -77,9 +77,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Book.cs" />
-    <Compile Include="Board.cs" />
+    <Compile Include="Systems\Board.cs" />
     <Compile Include="Compression.cs" />
-    <Compile Include="ControlService.cs" />
+    <Compile Include="Systems\ControlService.cs" />
     <Compile Include="Messaging\ChatCommandHandler.cs" />
     <Compile Include="Messaging\ChatCommand.cs" />
     <Compile Include="Messaging\Admin.cs" />
@@ -90,7 +90,7 @@
     <Compile Include="Messaging\Statuses.cs" />
     <Compile Include="Messaging\Stats.cs" />
     <Compile Include="Messaging\Time.cs" />
-    <Compile Include="NumberCruncher.cs" />
+    <Compile Include="Systems\NumberCruncher.cs" />
     <Compile Include="Objects\Creature.cs" />
     <Compile Include="Objects\ConditionInfo.cs" />
     <Compile Include="Objects\Door.cs" />
@@ -112,6 +112,7 @@
     <Compile Include="Scripting\HybrasylWorldObject.cs" />
     <Compile Include="Scripting\Script.cs" />
     <Compile Include="Scripting\ScriptProcessor.cs" />
+    <Compile Include="Systems\Guild.cs" />
     <Compile Include="Threading\Lockable.cs" />
     <Compile Include="Throttle.cs" />
     <Compile Include="Time.cs" />
@@ -124,7 +125,7 @@
     <Compile Include="Inventory.cs" />
     <Compile Include="Monolith.cs" />
     <Compile Include="Objects\ItemObject.cs" />
-    <Compile Include="Jobs.cs" />
+    <Compile Include="Systems\Jobs.cs" />
     <Compile Include="Lobby.cs" />
     <Compile Include="Login.cs" />
     <Compile Include="Map.cs" />
@@ -137,7 +138,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="QuadTree.cs" />
+    <Compile Include="Systems\QuadTree.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="ServerPacketStructures.cs" />
     <Compile Include="Template.cs" />

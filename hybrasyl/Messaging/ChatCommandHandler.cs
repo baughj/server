@@ -52,9 +52,7 @@ namespace Hybrasyl.Messaging
                                 allowedArgcounts.Add(baseopt);
                             }
                         }
-
                     }
-                    // int argcount = ((string)x.GetField("ArgumentText", BindingFlags.Public | BindingFlags.Static).GetValue(null)).Count(e => e == '<');
                     _associates.Add(command, (x, allowedArgcounts));
                     Logger.Info($"{command} registered");
                 }
