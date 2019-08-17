@@ -309,10 +309,11 @@ namespace Hybrasyl
                 var associate = Sequence?.Associate is null ? invokee : Sequence.Associate;
                 if (associate.SequenceCatalog.TryGetValue(NextSequence, out sequence) || Game.World.GlobalSequencesCatalog.TryGetValue(NextSequence, out sequence))
                 {
-                    sequence.ShowTo(invoker, invokee);
                     // End previous sequence
                     invoker.DialogState.EndDialog();
                     invoker.DialogState.StartDialog(invokee, sequence);
+                    sequence.ShowTo(invoker, invokee);
+
                 }
                 else
                 {
@@ -362,6 +363,7 @@ namespace Hybrasyl
             {
                 var dialogPacket = base.GenerateBasePacket(invoker, invokee);
                 invoker.Enqueue(dialogPacket);
+                Logger.Info($"Sending packet to {invoker.Name}");
                 RunCallback(invoker, invokee);
             }
 

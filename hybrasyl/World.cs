@@ -2890,6 +2890,7 @@ namespace Hybrasyl
                     var option = packet.ReadByte();
                     var dialog = user.DialogState.ActiveDialog as OptionsDialog;
                     dialog.HandleResponse(user, option, clickTarget);
+                    return;
                 }
 
                 if (user.DialogState.ActiveDialog is TextDialog)
@@ -2898,6 +2899,7 @@ namespace Hybrasyl
                     var response = packet.ReadString8();
                     var dialog = user.DialogState.ActiveDialog as TextDialog;
                     dialog.HandleResponse(user, response, clickTarget);
+                    return;
                 }
                 // TODO: implement FunctionDialog handling here?
 
@@ -3031,6 +3033,7 @@ namespace Hybrasyl
                     {
                         Type type = clickTarget.GetType();
                         MethodInfo methodInfo = type.GetMethod("OnClick");
+                        user.LastAssociate = clickTarget as VisibleObject;
                         methodInfo.Invoke(clickTarget, new[] { user });
                     }
                 }

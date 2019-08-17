@@ -199,7 +199,6 @@ namespace Hybrasyl
             //Console.SetWindowSize(140, 36);  //Removed for cross-platform compatibility
             LogLevel = Hybrasyl.Constants.DEFAULT_LOG_LEVEL;
             Assemblyinfo = new AssemblyInfo(Assembly.GetEntryAssembly());
-
             
             Constants.DataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Hybrasyl");
 

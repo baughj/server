@@ -156,11 +156,11 @@ namespace Hybrasyl.Scripting
                 Compiled.Globals.Set("logger", UserData.Create(new ScriptLogger(Name)));
                 Compiled.DoFile(FullPath);
             }
-            catch (ScriptRuntimeException e)
+            catch (Exception ex) when (ex is MoonSharp.Interpreter.SyntaxErrorException || ex is MoonSharp.Interpreter.ScriptRuntimeException)
             {
-                ScriptingLogger.Error($"Error executing script {FullPath}: {e.DecoratedMessage}, full stacktrace follows:\n{e.StackTrace}");
+                ScriptingLogger.Error($"Error executing script {FullPath}: {ex.Message}, full stacktrace follows:\n{ex.StackTrace}");
                 Disabled = true;
-                CompilationError = e.ToString();
+                CompilationError = ex.ToString();
                 return false;
             }
 
@@ -195,11 +195,11 @@ namespace Hybrasyl.Scripting
                 // We pass Compiled.Globals here to make sure that the updated table (with new variables) makes it over
                 Compiled.DoString(expr, Compiled.Globals);
             }
-            catch (ScriptRuntimeException e)
+            catch (Exception ex) when (ex is MoonSharp.Interpreter.SyntaxErrorException || ex is MoonSharp.Interpreter.ScriptRuntimeException)
             {
-                ScriptingLogger.Error($"{Name}: Error executing expression: {expr}: \n{e.DecoratedMessage} full stacktrace follows:\n{e.StackTrace}");
+                ScriptingLogger.Error($"{Name}: Error executing expression: {expr}: \n{ex.Message} full stacktrace follows:\n{ex.StackTrace}");
                 //Disabled = true;
-                CompilationError = e.ToString();
+                CompilationError = ex.ToString();
                 return false;
             }
             return true;
@@ -215,11 +215,11 @@ namespace Hybrasyl.Scripting
                 Compiled.Globals.Set("invoker", GetUserDataValue(invoker));
                 return Compiled.DoString(expr);
             }
-            catch (ScriptRuntimeException e)
+            catch (Exception ex) when (ex is MoonSharp.Interpreter.SyntaxErrorException || ex is MoonSharp.Interpreter.ScriptRuntimeException)
             {
-                ScriptingLogger.Error($"{Name}: Error executing expression: {expr}: \n{e.DecoratedMessage} full stacktrace follows:\n{e.StackTrace}");
+                ScriptingLogger.Error($"{Name}: Error executing expression: {expr}: \n{ex.Message} full stacktrace follows:\n{ex.StackTrace}");
                 //Disabled = true;
-                CompilationError = e.ToString();
+                CompilationError = ex.ToString();
                 return DynValue.Nil;
             }
         }
@@ -240,11 +240,11 @@ namespace Hybrasyl.Scripting
                 else
                     return false;
             }
-            catch (ScriptRuntimeException e)
+            catch (Exception ex) when (ex is MoonSharp.Interpreter.SyntaxErrorException || ex is MoonSharp.Interpreter.ScriptRuntimeException)
             {
-                ScriptingLogger.Error($"{Name}: Error executing expression: {functionName} ({e.DecoratedMessage}) full stacktrace follows:\n{e.StackTrace}");
+                ScriptingLogger.Error($"{Name}: Error executing expression: {functionName} ({ex.Message}) full stacktrace follows:\n{ex.StackTrace}");
                 //Disabled = true;
-                CompilationError = e.ToString();
+                CompilationError = ex.ToString();
                 return false;
             }
 
@@ -266,11 +266,11 @@ namespace Hybrasyl.Scripting
                 else
                     return false;
             }
-            catch (ScriptRuntimeException e)
+            catch (Exception ex) when (ex is MoonSharp.Interpreter.SyntaxErrorException || ex is MoonSharp.Interpreter.ScriptRuntimeException)
             {
-                ScriptingLogger.Error($"{Name}: Error executing function: {functionName} ({e.DecoratedMessage}) , full stacktrace follows:\n\n{e.StackTrace}");
+                ScriptingLogger.Error($"{Name}: Error executing function: {functionName} ({ex.Message}) , full stacktrace follows:\n\n{ex.StackTrace}");
                 //Disabled = true;
-                CompilationError = e.ToString();
+                CompilationError = ex.ToString();
                 return false;
             }
 
@@ -290,11 +290,11 @@ namespace Hybrasyl.Scripting
                 else
                     return false;
             }
-            catch (ScriptRuntimeException e)
+            catch (Exception ex) when (ex is MoonSharp.Interpreter.SyntaxErrorException || ex is MoonSharp.Interpreter.ScriptRuntimeException)
             {
-                ScriptingLogger.Error($"{Name}: Error executing function: {functionName} ({e.DecoratedMessage}) , full stacktrace follows:\n{e.StackTrace}");
+                Logger.Error($"{Name}: Error executing function: {functionName} ({ex.Message}) , full stacktrace follows:\n{ex.StackTrace}");
                 //Disabled = true;
-                CompilationError = e.ToString();
+                CompilationError = ex.ToString();
                 return false;
             }
 

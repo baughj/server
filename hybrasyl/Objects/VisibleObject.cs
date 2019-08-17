@@ -318,11 +318,14 @@ namespace Hybrasyl.Objects
                 Logger.DebugFormat("Pursuit {0}, id {1}", pursuit.Name, pursuit.Id);
                 if (pursuit.MenuCheckExpression != string.Empty)
                 {
-                    var ret = Script.ExecuteAndReturn(pursuit.MenuCheckExpression, this);
+                    var ret = Script.ExecuteAndReturn(pursuit.MenuCheckExpression, invoker);
                     // If the menu check expression returns anything other than true, we don't include the 
                     // pursuit on the main menu that is sent to the user
-                    if (ret != DynValue.True)
+                    if (!ret.CastToBool())
+                    {
+                        Logger.Info($"{pursuit.MenuCheckExpression} evaluated to {ret}");
                         continue;
+                    }
                 }
                 options.Options.Add(new MerchantDialogOption { Id = (ushort)pursuit.Id.Value, Text = pursuit.Name} );
                 optionsCount++;
