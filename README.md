@@ -127,7 +127,7 @@ To get started with the server, you have two options:
    
   c. **Update your configuration**
 
-	For your server configuration, you can start with our [annotated](https://	github.com/hybrasyl/server/tree/main/contrib/config.xml) example for your 	config.xml which will help you get up and running quickly.
+   For your server configuration, you can start with our [annotated](https://github.com/hybrasyl/server/tree/main/contrib/config.xml) example for your config.xml which will help you get up and running quickly.
 	
   d. **Install and run Hybrasyl** 
 
